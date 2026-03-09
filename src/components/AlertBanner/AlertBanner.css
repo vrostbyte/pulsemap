@@ -1,0 +1,52 @@
+/**
+ * AlertBanner — Slides down from the top of the viewport for critical alerts.
+ */
+
+.alertBanner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 340px; /* Don't overlap the sidebar */
+  z-index: 200;
+  background: #7c1111;
+  border-bottom: 1px solid #ef4444;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+  font-family: system-ui, sans-serif;
+}
+
+.alertBanner.visible {
+  transform: translateY(0);
+}
+
+.icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.message {
+  flex: 1;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dismiss {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  padding: 4px 10px;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+  transition: background 0.15s;
+}
+
+.dismiss:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

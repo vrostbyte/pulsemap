@@ -1,0 +1,84 @@
+/**
+ * LayerControls — Floating overlay positioned bottom-left on the map.
+ */
+
+.layerControls {
+  position: fixed;
+  bottom: 32px;
+  left: 16px;
+  z-index: 100;
+  background: rgba(10, 15, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.title {
+  color: #8892a4;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  font-family: system-ui, sans-serif;
+}
+
+.layerButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.layerButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.layerButton.active {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+
+.active .dot {
+  opacity: 1;
+}
+
+.layerName {
+  color: #ffffff;
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  flex: 1;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.active .layerName {
+  opacity: 1;
+}
+
+.freshness {
+  color: #8892a4;
+  font-size: 10px;
+  font-family: system-ui, sans-serif;
+}

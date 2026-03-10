@@ -117,10 +117,10 @@ function parseApiRows(rows: CdcNwssRow[]): WastewaterData[] {
   const results: WastewaterData[] = [];
   for (const row of rows) {
     const fips = row.county_fips;
+    if (!fips) continue;
     const stateFips = fips.slice(0, 2);
     const STATE_CENTROIDS: Record<string,[number,number]> = {"01":[32.80,-86.81],"06":[36.78,-119.42],"12":[27.77,-81.69],"13":[32.17,-82.90],"17":[40.63,-89.40],"24":[39.05,-76.64],"25":[42.41,-71.38],"26":[44.31,-85.60],"36":[42.17,-74.95],"37":[35.76,-79.02],"39":[40.42,-82.91],"42":[41.20,-77.19],"47":[35.52,-86.58],"48":[31.97,-99.90],"51":[37.43,-78.66],"53":[47.75,-120.74]};
     const [lat, lng] = STATE_CENTROIDS[stateFips] ?? [39.5, -98.35];
-    if (!fips) continue;
 
     results.push({
       countyFips: fips,

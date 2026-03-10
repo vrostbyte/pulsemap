@@ -94,8 +94,14 @@ export default defineConfig(({ mode }) => {
       try {
         const upstream = await fetch(CDC_URL, { headers: { Accept: 'application/json' } });
         const body = await upstream.text();
-        jsonResponse(res, upstream.ok ? 200 : 502, upstream.ok ? body : JSON.stringify({ error: `CDC ${upstream.status}` }));
+        if (!upstream.ok) {
+          console.error(`[PulseMap] cdc-wastewater upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
+          jsonResponse(res, 502, JSON.stringify({ error: `CDC upstream ${upstream.status}`, detail: body.slice(0, 200) }));
+          return;
+        }
+        jsonResponse(res, 200, body);
       } catch (e) {
+        console.error('[PulseMap] cdc-wastewater fetch threw:', e);
         jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
       }
     };
@@ -131,8 +137,12 @@ export default defineConfig(({ mode }) => {
       try {
         const upstream = await fetch(upstreamUrl, { headers: { Accept: 'application/json' } });
         const body = await upstream.text();
-        jsonResponse(res, upstream.ok ? 200 : 502, body);
-      } catch {
+        if (!upstream.ok) {
+          console.error(`[PulseMap] epa-airquality upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
+        }
+        jsonResponse(res, upstream.ok ? 200 : 200, upstream.ok ? body : '[]');
+      } catch (e) {
+        console.error('[PulseMap] epa-airquality fetch threw:', e);
         jsonResponse(res, 200, '[]');
       }
     };
@@ -147,12 +157,14 @@ export default defineConfig(({ mode }) => {
         const upstream = await fetch('https://www.who.int/rss-feeds/news-releases.xml', {
           headers: { Accept: 'application/rss+xml, application/xml, text/xml' },
         });
+        const body = await upstream.text();
         if (!upstream.ok) {
-          jsonResponse(res, 502, JSON.stringify({ error: `WHO RSS ${upstream.status}` })); return;
+          console.error(`[PulseMap] who-outbreaks upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
+          jsonResponse(res, 502, JSON.stringify({ error: `WHO upstream ${upstream.status}`, detail: body.slice(0, 200) })); return;
         }
-        const xml = await upstream.text();
-        jsonResponse(res, 200, JSON.stringify(parseRss(xml)));
+        jsonResponse(res, 200, JSON.stringify(parseRss(body)));
       } catch (e) {
+        console.error('[PulseMap] who-outbreaks fetch threw:', e);
         jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
       }
     };
@@ -169,10 +181,12 @@ export default defineConfig(({ mode }) => {
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
         const upstream = await fetch(CMS_URL, { headers: { Accept: 'application/json' } });
+        const body = await upstream.text();
         if (!upstream.ok) {
-          jsonResponse(res, 502, JSON.stringify({ error: `CMS ${upstream.status}` })); return;
+          console.error(`[PulseMap] cms-hospitals upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
+          jsonResponse(res, 502, JSON.stringify({ error: `CMS upstream ${upstream.status}`, detail: body.slice(0, 200) })); return;
         }
-        const raw = await upstream.json() as { results?: Array<Record<string, unknown>> };
+        const raw = JSON.parse(body) as { results?: Array<Record<string, unknown>> };
         const results = (raw.results ?? []).map((row) => ({
           hospital_name:      row['hospital_name'] ?? '',
           address:            row['address'] ?? '',
@@ -184,6 +198,7 @@ export default defineConfig(({ mode }) => {
         }));
         jsonResponse(res, 200, JSON.stringify(results));
       } catch (e) {
+        console.error('[PulseMap] cms-hospitals fetch threw:', e);
         jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
       }
     };
@@ -205,10 +220,12 @@ export default defineConfig(({ mode }) => {
             'User-Agent': 'PulseMap/0.1 (community health dashboard; contact@example.com)',
           },
         });
+        const body = await upstream.text();
         if (!upstream.ok) {
-          jsonResponse(res, 502, JSON.stringify({ error: `NWS ${upstream.status}` })); return;
+          console.error(`[PulseMap] nws-alerts upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
+          jsonResponse(res, 502, JSON.stringify({ error: `NWS upstream ${upstream.status}`, detail: body.slice(0, 200) })); return;
         }
-        const geojson = await upstream.json() as { features?: Array<{ type: string; geometry: unknown; properties: Record<string, unknown> }> };
+        const geojson = JSON.parse(body) as { features?: Array<{ type: string; geometry: unknown; properties: Record<string, unknown> }> };
         const features = (geojson.features ?? [])
           .filter((f) => HEALTH_ALERT_TYPES.has(String(f.properties['event'] ?? '')))
           .map((f) => ({
@@ -227,6 +244,7 @@ export default defineConfig(({ mode }) => {
           }));
         jsonResponse(res, 200, JSON.stringify(features));
       } catch (e) {
+        console.error('[PulseMap] nws-alerts fetch threw:', e);
         jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
       }
     };
@@ -243,10 +261,12 @@ export default defineConfig(({ mode }) => {
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: FLUVIEW_REQUEST_BODY,
         });
+        const body = await upstream.text();
         if (!upstream.ok) {
-          jsonResponse(res, 502, JSON.stringify({ error: `FluView ${upstream.status}` })); return;
+          console.error(`[PulseMap] cdc-fluview upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
+          jsonResponse(res, 502, JSON.stringify({ error: `FluView upstream ${upstream.status}`, detail: body.slice(0, 200) })); return;
         }
-        const raw = await upstream.json() as { DataItems?: Array<Record<string, unknown>> };
+        const raw = JSON.parse(body) as { DataItems?: Array<Record<string, unknown>> };
         const normalised = (raw.DataItems ?? []).map((item) => ({
           region:            `Region ${item['REGION'] ?? ''}`.trim(),
           ili_pct:           Number(item['ILI']) || 0,
@@ -257,6 +277,7 @@ export default defineConfig(({ mode }) => {
         }));
         jsonResponse(res, 200, JSON.stringify(normalised));
       } catch (e) {
+        console.error('[PulseMap] cdc-fluview fetch threw:', e);
         jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
       }
     };

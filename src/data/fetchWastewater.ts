@@ -127,7 +127,7 @@ function parseApiRows(rows: CdcNwssRow[]): WastewaterData[] {
       countyName: row.county_names ?? 'Unknown',
       state: row.wwtp_jurisdiction ?? '',
       percentileCategory: row.percentile ?? 'low',
-      ptcChangeFrom15d: Number(row.ptc_15d) || 0,
+      ptcChangeFrom15d: Number((row as Record<string, unknown>)['ptc_15d']) || 0,
       firstSampleDateCollected: row.date_start ?? new Date().toISOString(),
       latitude: lat,
       longitude: lng,

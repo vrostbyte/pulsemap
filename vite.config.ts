@@ -145,7 +145,7 @@ export default defineConfig(({ mode }) => {
       '&$select=county_fips,county_names,wwtp_jurisdiction,ptc_15d,percentile,date_start' +
       '&$order=date_start%20DESC';
 
-    return async (req, res, next) => {
+    return async (req: any, res: any, next: any) => {
       if (!req.url?.startsWith('/api/cdc-wastewater')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
@@ -166,7 +166,7 @@ export default defineConfig(({ mode }) => {
 
   /** EPA AirNow — injects API key from .env.local */
   function airNowMiddleware(): Connect.HandleFunction {
-    return async (req, res, next) => {
+    return async (req: any, res: any, next: any) => {
       if (!req.url?.startsWith('/api/epa-airquality')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
@@ -222,7 +222,7 @@ export default defineConfig(({ mode }) => {
 
   /** WHO Disease Outbreak News — RSS → JSON */
   function whoOutbreaksMiddleware(): Connect.HandleFunction {
-    return async (req, res, next) => {
+    return async (req: any, res: any, next: any) => {
       if (!req.url?.startsWith('/api/who-outbreaks')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
@@ -248,7 +248,7 @@ export default defineConfig(({ mode }) => {
       'https://data.cms.gov/provider-data/api/1/datastore/query/xubh-q36u/0' +
       '?limit=1500&offset=0&keys=true';
 
-    return async (req, res, next) => {
+    return async (req: any, res: any, next: any) => {
       if (!req.url?.startsWith('/api/cms-hospitals')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
@@ -284,7 +284,7 @@ export default defineConfig(({ mode }) => {
       'https://api.weather.gov/alerts/active' +
       '?status=actual&message_type=alert&urgency=Immediate,Expected&severity=Extreme,Severe';
 
-    return async (req, res, next) => {
+    return async (req: any, res: any, next: any) => {
       if (!req.url?.startsWith('/api/nws-alerts')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
@@ -326,7 +326,7 @@ export default defineConfig(({ mode }) => {
 
   /** CDC FluView — POST to upstream, normalise HHS region rows */
   function cdcFluviewMiddleware(): Connect.HandleFunction {
-    return async (req, res, next) => {
+    return async (req: any, res: any, next: any) => {
       if (!req.url?.startsWith('/api/cdc-fluview')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {

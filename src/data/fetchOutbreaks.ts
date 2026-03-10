@@ -169,7 +169,19 @@ export async function fetchOutbreaks(): Promise<HealthSignal[]> {
   try {
     const response = await fetch('/api/who-outbreaks');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const items = (await response.json()) as WhoRssItem[];
+    const xmlText = await response.text();
+    if (!xmlText || xmlText.trim().length === 0) throw new Error('Empty response');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, 'text/xml');
+    const itemEls = Array.from(doc.querySelectorAll('item'));
+    if (itemEls.length === 0) throw new Error('Empty response');
+    const items: WhoRssItem[] = itemEls.map((el) => ({
+      title:       el.querySelector('title')?.textContent ?? '',
+      link:        el.querySelector('link')?.textContent ?? '',
+      description: el.querySelector('description')?.textContent ?? '',
+      pubDate:     el.querySelector('pubDate')?.textContent ?? '',
+      guid:        el.querySelector('guid')?.textContent ?? '',
+    }));
     const alerts = items
       .map((item, i) => parseItem(item, i))
       .filter((a): a is OutbreakAlert => a !== null);

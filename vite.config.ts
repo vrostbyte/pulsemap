@@ -58,20 +58,12 @@ const HEALTH_ALERT_TYPES = new Set([
   'Freeze Warning', 'Freeze Watch',
 ]);
 
-const FLUVIEW_REQUEST_BODY = JSON.stringify({
-  AppVersion: 'Public',
-  DatasourceDT: [{ ID: 1, Name: 'ILINet' }],
-  RegionTypeId: 3,
-  SubRegionsDT: [
-    { ID: 1 }, { ID: 2 }, { ID: 3 }, { ID: 4 },
-    { ID: 5 }, { ID: 6 }, { ID: 7 }, { ID: 8 },
-    { ID: 9 }, { ID: 10 },
-  ],
-  SeasonsDT: [{ ID: 66 }],
-  DataItemsDT: [{ ID: 'ILI' }, { ID: 'ILITOTAL' }, { ID: 'NUM_OF_PROVIDERS' }],
-  HHSRegionsDT: [],
-  CensusDivsDT: [],
-});
+// CDC ILINet data via CMU Delphi Epidata API (mirrors CDC FluView, publicly accessible)
+// Covers 2025-26 flu season (epiweeks 202540–202620)
+const FLUVIEW_DELPHI_URL =
+  'https://api.delphi.cmu.edu/epidata/fluview/' +
+  '?regions=nat,hhs1,hhs2,hhs3,hhs4,hhs5,hhs6,hhs7,hhs8,hhs9,hhs10' +
+  '&epiweeks=202540-202620';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -85,10 +77,10 @@ export default defineConfig(({ mode }) => {
     const CDC_URL =
       'https://data.cdc.gov/resource/2ew6-ywp6.json' +
       '?$limit=10000' +
-      '&$select=county_fips,county,state_abbr,ptc_15d,percentile,level,date_start,county_lat,county_long' +
+      '&$select=county_fips,state_abbr,ptc_15d,percentile,level,date_start,county_lat,county_long' +
       '&$order=date_start%20DESC';
 
-    return async (req, res, next) => {
+    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
       if (!req.url?.startsWith('/api/cdc-wastewater')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
@@ -109,7 +101,7 @@ export default defineConfig(({ mode }) => {
 
   /** EPA AirNow — injects API key from .env.local */
   function airNowMiddleware(): Connect.HandleFunction {
-    return async (req, res, next) => {
+    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
       if (!req.url?.startsWith('/api/epa-airquality')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
@@ -150,11 +142,11 @@ export default defineConfig(({ mode }) => {
 
   /** WHO Disease Outbreak News — RSS → JSON */
   function whoOutbreaksMiddleware(): Connect.HandleFunction {
-    return async (req, res, next) => {
+    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
       if (!req.url?.startsWith('/api/who-outbreaks')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
-        const upstream = await fetch('https://www.who.int/rss-feeds/news-releases.xml', {
+        const upstream = await fetch('https://www.who.int/feeds/entity/csr/don/en/rss.xml', {
           headers: { Accept: 'application/rss+xml, application/xml, text/xml' },
         });
         const body = await upstream.text();
@@ -174,9 +166,9 @@ export default defineConfig(({ mode }) => {
   function cmsHospitalsMiddleware(): Connect.HandleFunction {
     const CMS_URL =
       'https://data.cms.gov/provider-data/api/1/datastore/query/xubh-q36u/0' +
-      '?limit=5000&offset=0&keys=true';
+      '?limit=1500&offset=0&keys=true';
 
-    return async (req, res, next) => {
+    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
       if (!req.url?.startsWith('/api/cms-hospitals')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
@@ -210,7 +202,7 @@ export default defineConfig(({ mode }) => {
       'https://api.weather.gov/alerts/active' +
       '?status=actual&message_type=alert&urgency=Immediate,Expected&severity=Extreme,Severe';
 
-    return async (req, res, next) => {
+    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
       if (!req.url?.startsWith('/api/nws-alerts')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
@@ -250,31 +242,35 @@ export default defineConfig(({ mode }) => {
     };
   }
 
-  /** CDC FluView — POST to upstream, normalise HHS region rows */
+  /** CDC ILINet FluView — via CMU Delphi Epidata API, normalise HHS region rows */
   function cdcFluviewMiddleware(): Connect.HandleFunction {
-    return async (req, res, next) => {
+    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
       if (!req.url?.startsWith('/api/cdc-fluview')) return next();
       if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       try {
-        const upstream = await fetch('https://gis.cdc.gov/grasp/flu2/GetFlu2Data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: FLUVIEW_REQUEST_BODY,
-        });
+        const upstream = await fetch(FLUVIEW_DELPHI_URL, { headers: { Accept: 'application/json' } });
         const body = await upstream.text();
         if (!upstream.ok) {
           console.error(`[PulseMap] cdc-fluview upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
           jsonResponse(res, 502, JSON.stringify({ error: `FluView upstream ${upstream.status}`, detail: body.slice(0, 200) })); return;
         }
-        const raw = JSON.parse(body) as { DataItems?: Array<Record<string, unknown>> };
-        const normalised = (raw.DataItems ?? []).map((item) => ({
-          region:            `Region ${item['REGION'] ?? ''}`.trim(),
-          ili_pct:           Number(item['ILI']) || 0,
-          ili_total:         Number(item['ILITOTAL']) || 0,
-          num_providers:     Number(item['NUM_OF_PROVIDERS']) || 0,
-          week_ending:       item['WEEKEND'] ?? '',
-          national_baseline: 2.5,
-        }));
+        const raw = JSON.parse(body) as { result?: number; epidata?: Array<Record<string, unknown>> };
+        const normalised = (raw.epidata ?? []).map((item) => {
+          const regionRaw = String(item['region'] ?? '');
+          const region = regionRaw === 'nat'
+            ? 'National'
+            : regionRaw.startsWith('hhs')
+              ? `Region ${regionRaw.slice(3)}`
+              : regionRaw;
+          return {
+            region,
+            ili_pct:           Number(item['ili']) || 0,
+            ili_total:         Number(item['num_ili']) || 0,
+            num_providers:     Number(item['num_providers']) || 0,
+            week_ending:       String(item['epiweek'] ?? ''),
+            national_baseline: 3.1,
+          };
+        });
         jsonResponse(res, 200, JSON.stringify(normalised));
       } catch (e) {
         console.error('[PulseMap] cdc-fluview fetch threw:', e);

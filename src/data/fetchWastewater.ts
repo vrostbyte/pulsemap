@@ -59,24 +59,43 @@ const MOCK_DATA: WastewaterData[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Normalises the CDC NWSS category string to lowercase for consistent matching.
+ * Handles both the `level` field ("Very High") and fallback from numeric
+ * `percentile` (already lowercase from deriveCategory).
+ */
 function percentileToSeverity(
   category: string,
 ): HealthSignal['severity'] {
-  switch (category.toLowerCase()) {
+  switch (category.toLowerCase().trim()) {
     case 'very high': return 'critical';
     case 'high':      return 'high';
     case 'moderate':  return 'medium';
-    default:          return 'low';
+    default:          return 'low'; // "low", "minimal", unknown
   }
 }
 
 function percentileToValue(category: string): number {
-  switch (category.toLowerCase()) {
+  switch (category.toLowerCase().trim()) {
     case 'very high': return 90;
     case 'high':      return 70;
     case 'moderate':  return 45;
     default:          return 15;
   }
+}
+
+/**
+ * Converts a numeric Socrata percentile (0–100) to a category string when
+ * the `level` field is absent from the CDC response.
+ */
+function deriveCategory(percentile: string | number | undefined): string {
+  if (percentile === undefined || percentile === null || percentile === '') return 'low';
+  const p = Number(percentile);
+  if (isNaN(p)) return String(percentile).toLowerCase(); // already a category string
+  if (p >= 90) return 'very high';
+  if (p >= 75) return 'high';
+  if (p >= 40) return 'moderate';
+  return 'low';
 }
 
 function wastewaterToSignal(d: WastewaterData): HealthSignal {
@@ -109,32 +128,60 @@ interface CdcNwssRow {
   county?: string;
   state_abbr?: string;
   ptc_15d?: string | number;
-  percentile?: string;
+  /** Numeric percentile rank (0–100). Present in all rows. */
+  percentile?: string | number;
+  /** Categorical level string: "Low" | "Moderate" | "High" | "Very High".
+   *  Present if the API returns it; fall back to deriveCategory(percentile). */
+  level?: string;
   date_start?: string;
   county_lat?: string | number;
   county_long?: string | number;
 }
 
+/**
+ * Parses CDC NWSS rows into WastewaterData, deduplicating per county FIPS.
+ *
+ * The CDC dataset has one row per wastewater treatment plant (WWTP), and
+ * multiple WWTPs can exist in a single county. Since the data is ordered by
+ * date_start DESC, the first occurrence of each county FIPS is the most
+ * recent and is kept; subsequent rows for the same county are discarded
+ * unless their signal level is higher.
+ */
 function parseApiRows(rows: CdcNwssRow[]): WastewaterData[] {
-  const results: WastewaterData[] = [];
+  // county_fips → highest-severity WastewaterData seen so far
+  const byFips = new Map<string, WastewaterData>();
+
   for (const row of rows) {
     const fips = row.county_fips;
     const lat = Number(row.county_lat);
     const lng = Number(row.county_long);
     if (!fips || isNaN(lat) || isNaN(lng)) continue;
 
-    results.push({
+    // Prefer the `level` field (e.g. "Very High"); fall back to numeric `percentile`
+    const category = row.level ? row.level : deriveCategory(row.percentile);
+
+    const data: WastewaterData = {
       countyFips: fips,
       countyName: row.county ?? 'Unknown',
       state: row.state_abbr ?? '',
-      percentileCategory: row.percentile ?? 'low',
+      percentileCategory: category,
       ptcChangeFrom15d: Number(row.ptc_15d) || 0,
       firstSampleDateCollected: row.date_start ?? new Date().toISOString(),
       latitude: lat,
       longitude: lng,
-    });
+    };
+
+    // Keep whichever entry for this county has the higher severity value
+    const existing = byFips.get(fips);
+    if (
+      !existing ||
+      percentileToValue(category) > percentileToValue(existing.percentileCategory)
+    ) {
+      byFips.set(fips, data);
+    }
   }
-  return results;
+
+  return Array.from(byFips.values());
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -146,7 +193,9 @@ function parseApiRows(rows: CdcNwssRow[]): WastewaterData[] {
  */
 export async function fetchWastewater(): Promise<HealthSignal[]> {
   try {
-    const response = await fetch('/api/cdc-wastewater');
+    const response = await fetch('/api/cdc-wastewater', {
+      signal: AbortSignal.timeout(8_000), // fail fast so mock fallback kicks in quickly
+    });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }

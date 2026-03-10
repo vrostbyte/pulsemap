@@ -162,6 +162,24 @@ function outbreakToSignal(alert: OutbreakAlert): HealthSignal | null {
   };
 }
 
+// ─── XML parser ───────────────────────────────────────────────────────────────
+
+function parseXmlItems(xml: string): WhoRssItem[] {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  return Array.from(doc.querySelectorAll('item')).map((el) => {
+    const item: WhoRssItem = {};
+    const title       = el.querySelector('title')?.textContent?.trim();
+    const link        = el.querySelector('link')?.textContent?.trim();
+    const pubDate     = el.querySelector('pubDate')?.textContent?.trim();
+    const description = el.querySelector('description')?.textContent?.trim();
+    if (title !== undefined)       item.title = title;
+    if (link !== undefined)        item.link = link;
+    if (pubDate !== undefined)     item.pubDate = pubDate;
+    if (description !== undefined) item.description = description;
+    return item;
+  });
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /** Fetches WHO outbreak alerts.  Falls back to mock data on failure. */
@@ -169,7 +187,8 @@ export async function fetchOutbreaks(): Promise<HealthSignal[]> {
   try {
     const response = await fetch('/api/who-outbreaks');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const items = (await response.json()) as WhoRssItem[];
+    const xml = await response.text();
+    const items = parseXmlItems(xml);
     const alerts = items
       .map((item, i) => parseItem(item, i))
       .filter((a): a is OutbreakAlert => a !== null);

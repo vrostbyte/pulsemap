@@ -86,9 +86,8 @@ export class MapView {
 
     this.map = new maplibregl.Map({
       container,
-      // Inline style — no network request, renders immediately.
-      // Replace with a hosted style URL in production for richer basemap tiles.
-      style: DARK_INLINE_STYLE,
+      // CARTO dark matter tiles — free, no API key required
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       center: [-95.71, 37.09], // Centred on continental USA
       zoom: 4,
       // Pass an options object instead of `true` to satisfy MapLibre v4 types

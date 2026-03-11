@@ -13,7 +13,7 @@
  * We resolve coordinates via a static ZIP centroid lookup table.
  */
 
-export const config = { runtime: 'nodejs' };
+export const config = { runtime: 'edge' };
 
 // Inline ZIP centroid lookup (subset of major ZIPs for Vercel bundling compatibility)
 function zipToLatLng(zip: string): [number, number] | null {

@@ -11,7 +11,7 @@
  * Docs:     https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html
  */
 
-export const config = { runtime: 'nodejs' };
+export const config = { runtime: 'edge' };
 
 const CENSUS_GEOCODER_BASE =
   'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress';

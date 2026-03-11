@@ -92,7 +92,7 @@ function parseApiRows(rows: FluRow[]): HealthSignal[] {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-/** Fetches CDC FluView ILI signals.  Falls back to mock data on failure. */
+/** Fetches CDC FluView ILI signals. Falls back to mock data on failure. */
 export async function fetchFluView(): Promise<HealthSignal[]> {
   try {
     const response = await fetch('/api/cdc-fluview');

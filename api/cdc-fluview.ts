@@ -15,8 +15,8 @@ export const config = { runtime: 'nodejs' };
 // CDC ILINet data via CMU Delphi Epidata API (mirrors CDC FluView, publicly accessible)
 const FLUVIEW_DELPHI_URL =
   'https://api.delphi.cmu.edu/epidata/fluview/' +
-  '?regions=nat' +
-  '&epiweeks=202401-202452';
+  '?regions=hhs1,hhs2,hhs3,hhs4,hhs5,hhs6,hhs7,hhs8,hhs9,hhs10' +
+  '&epiweeks=202401-202552';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

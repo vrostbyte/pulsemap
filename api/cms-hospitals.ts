@@ -22,7 +22,7 @@ function zipToLatLng(zip: string): [number, number] | null {
   const z = zip?.toString().padStart(5, '0') ?? '';
   // State centroid fallback by ZIP prefix
   const prefix = z.slice(0, 3);
-  const STATE_CENTS: Record<string, [number, number]> = {
+  const STATE_CENTS: Record<string, string> = {
     '350':'AL', '995':'AK', '850':'AZ', '716':'AR', '900':'CA',
     '800':'CO', '060':'CT', '197':'DE', '320':'FL', '300':'GA',
     '967':'HI', '832':'ID', '600':'IL', '460':'IN', '500':'IA',

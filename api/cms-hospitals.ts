@@ -119,8 +119,8 @@ export default async function handler(request: Request): Promise<Response> {
         state:              row['state'] ?? '',
         hospital_type:      row['hospital_type'] ?? '',
         emergency_services: row['emergency_services'] ?? '',
-        lat:                coords ? coords[0] : null,
-        lng:                coords ? coords[1] : null,
+        lat:                coords ? coords[0] : 39.5,
+        lng:                coords ? coords[1] : -98.35,
       };
     });
 

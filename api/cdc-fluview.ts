@@ -49,8 +49,8 @@ export default async function handler(request: Request): Promise<Response> {
       epidata?: Array<Record<string, unknown>>;
     };
 
-    // Normalise Delphi response to flat region rows
-    const normalised = (raw.epidata ?? []).map((item) => {
+    // Normalise Delphi response - keep only latest week per region
+    const allRows = (raw.epidata ?? []).map((item) => {
       const regionRaw = String(item['region'] ?? '');
       const region = regionRaw === 'nat'
         ? 'National'
@@ -63,9 +63,19 @@ export default async function handler(request: Request): Promise<Response> {
         ili_total:         Number(item['num_ili']) || 0,
         num_providers:     Number(item['num_providers']) || 0,
         week_ending:       String(item['epiweek'] ?? ''),
-        national_baseline: 3.1, // CDC 2025-26 season baseline
+        national_baseline: 3.1,
       };
     });
+
+    // Deduplicate: keep only the most recent week per region
+    const latestByRegion = new Map<string, typeof allRows[0]>();
+    for (const row of allRows) {
+      const existing = latestByRegion.get(row.region);
+      if (!existing || row.week_ending > existing.week_ending) {
+        latestByRegion.set(row.region, row);
+      }
+    }
+    const normalised = Array.from(latestByRegion.values());
 
     return new Response(JSON.stringify(normalised), {
       status: 200,

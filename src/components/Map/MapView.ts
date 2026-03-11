@@ -20,6 +20,7 @@ import { createWastewaterLayer } from '@/geo/layers/wastewaterLayer.js';
 import { createAirQualityLayer } from '@/geo/layers/airQualityLayer.js';
 import { createOutbreakLayers } from '@/geo/layers/outbreakLayer.js';
 import { createFluLayer } from '@/geo/layers/fluLayer.js';
+import { createHospitalLayer } from '@/geo/layers/hospitalLayer.js';
 
 // ─── Minimal offline map style ────────────────────────────────────────────────
 // A self-contained MapLibre style with no external tile sources.
@@ -165,6 +166,9 @@ export class MapView {
 
     if (active.has('outbreak')) {
       layers.push(...createOutbreakLayers(signals, this.handleHover));
+    }
+    if (active.has('hospital')) {
+      layers.push(createHospitalLayer(signals, this.handleHover));
     }
 
     this.overlay.setProps({ layers });

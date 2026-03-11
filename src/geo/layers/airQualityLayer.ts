@@ -51,7 +51,7 @@ export function createAirQualityLayer(
     filled: true,
     radiusScale: 1,
     radiusMinPixels: 4,
-    radiusMaxPixels: 40,
+    radiusMaxPixels: 60,
 
     getPosition: (d: HealthSignal) => [d.longitude, d.latitude],
 

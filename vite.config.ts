@@ -619,7 +619,22 @@ export default defineConfig(({ mode }) => {
           `https://www.airnowapi.org/aq/observation/latLong/current/` +
           `?format=application/json&latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}&distance=25&API_KEY=${apiKey}`;
       } else {
-        jsonResponse(res, 200, '[]'); return;
+        // Fan out to 8 major US cities for national coverage
+        const CITY_ZIPS = ['10001','90001','60601','77001','85001','19101','78201','98101'];
+        try {
+          const results = await Promise.allSettled(
+            CITY_ZIPS.map(z =>
+              fetch(`https://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&zipCode=${z}&distance=25&API_KEY=${apiKey}`)
+                .then(r => r.json())
+            )
+          );
+          const merged = results
+            .filter((r): r is PromiseFulfilledResult<unknown[]> => r.status === 'fulfilled' && Array.isArray(r.value))
+            .flatMap(r => r.value);
+          jsonResponse(res, 200, JSON.stringify(merged)); return;
+        } catch (e) {
+          jsonResponse(res, 200, '[]'); return;
+        }
       }
 
       try {

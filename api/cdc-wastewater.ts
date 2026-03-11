@@ -10,7 +10,7 @@
  * Cache: 1 hour (data is published weekly but there's no cost to re-checking)
  */
 
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'nodejs' };
 
 const CDC_NWSS_URL =
   'https://data.cdc.gov/resource/2ew6-ywp6.json' +

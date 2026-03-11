@@ -10,7 +10,7 @@
  * Cache: 24 hours (data is published weekly).
  */
 
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'nodejs' };
 
 // CDC ILINet data via CMU Delphi Epidata API (mirrors CDC FluView, publicly accessible)
 const FLUVIEW_DELPHI_URL =

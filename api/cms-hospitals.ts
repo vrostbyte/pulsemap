@@ -13,7 +13,7 @@
  * We resolve coordinates via a static ZIP centroid lookup table.
  */
 
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'nodejs' };
 
 import { zipToLatLng } from './_zip-centroids.js';
 

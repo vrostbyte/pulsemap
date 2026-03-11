@@ -10,7 +10,7 @@
  * Cache:    1 hour (AirNow updates hourly)
  */
 
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'nodejs' };
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

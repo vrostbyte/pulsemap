@@ -20,6 +20,25 @@ import { createWastewaterLayer } from '@/geo/layers/wastewaterLayer.js';
 import { createAirQualityLayer } from '@/geo/layers/airQualityLayer.js';
 import { createOutbreakLayers } from '@/geo/layers/outbreakLayer.js';
 
+// ─── Minimal offline map style ────────────────────────────────────────────────
+// A self-contained MapLibre style with no external tile sources.
+// This means the map works without any network access — deck.gl layers
+// (wastewater, AQI, outbreaks…) render fine on top of this dark canvas.
+// Swap this for a richer hosted style (Stadia, MapTiler, etc.) in production.
+const DARK_INLINE_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  name: 'PulseMap Dark',
+  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+  sources: {},
+  layers: [
+    {
+      id: 'background',
+      type: 'background',
+      paint: { 'background-color': '#0a0f1a' },
+    },
+  ],
+};
+
 // ─── Tooltip helpers ──────────────────────────────────────────────────────────
 
 function buildTooltipHtml(signal: HealthSignal): string {
@@ -67,8 +86,9 @@ export class MapView {
 
     this.map = new maplibregl.Map({
       container,
-      // Free tile style that requires no API key — adequate for MVP
-      style: 'https://demotiles.maplibre.org/style.json',
+      // Inline style — no network request, renders immediately.
+      // Replace with a hosted style URL in production for richer basemap tiles.
+      style: DARK_INLINE_STYLE,
       center: [-95.71, 37.09], // Centred on continental USA
       zoom: 4,
       // Pass an options object instead of `true` to satisfy MapLibre v4 types

@@ -1,52 +1,13 @@
 /**
- * Vite configuration for PulseMap.
+ * US ZIP code → [lat, lng] centroid lookup shared by CMS hospital proxy.
  *
- * Key setup:
- * - Path alias @/ → src/ so imports stay clean across deep directories
- * - CSS Modules enabled by default in Vite (*.module.css)
- * - Dev middleware: all /api/* routes are handled by configureServer plugins
- *   that replicate the Vercel Edge Function logic, bypassing Vite's file
- *   serving (which would otherwise return raw .ts source for api/*.ts files).
+ * ZIP_CENTROIDS  — exact centroids for the top ~300 US zip codes by hospital density.
+ * ZIP3_CENTROIDS — 3-digit SCF prefix fallback covering every US region.
  *
- * In production, api/*.ts Vercel Edge Functions handle the same routes.
+ * Prefixed with _ so Vercel does not treat this file as a route handler.
  */
 
-import { defineConfig, loadEnv } from 'vite';
-import { resolve } from 'path';
-import type { Connect } from 'vite';
-import type { ServerResponse } from 'http';
-
-// ─── Shared helpers ───────────────────────────────────────────────────────────
-
-function jsonResponse(res: ServerResponse, status: number, body: string) {
-  res.writeHead(status, {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-  });
-  res.end(body);
-}
-
-
-
-const HEALTH_ALERT_TYPES = new Set([
-  'Excessive Heat Warning', 'Excessive Heat Watch', 'Heat Advisory',
-  'Air Quality Alert', 'Air Quality Watch', 'Dense Fog Advisory',
-  'Extreme Cold Warning', 'Extreme Cold Watch',
-  'Wind Chill Warning', 'Wind Chill Watch', 'Wind Chill Advisory',
-  'Freeze Warning', 'Freeze Watch',
-]);
-
-// CDC ILINet data via CMU Delphi Epidata API (mirrors CDC FluView, publicly accessible)
-const FLUVIEW_DELPHI_URL =
-  'https://api.delphi.cmu.edu/epidata/fluview/' +
-  '?regions=nat' +
-  '&epiweeks=202401-202452';
-
-// ─── ZIP centroid lookup for CMS hospital coordinates ─────────────────────────
-// Exact centroids for the top ~300 US zip codes by hospital density.
-// Falls back to 3-digit prefix (SCF area) centroid when zip is not found.
-
-const ZIP_CENTROIDS: Record<string, [number, number]> = {
+export const ZIP_CENTROIDS: Record<string, [number, number]> = {
   // New York City – Manhattan
   '10001':[40.748,-73.997],'10002':[40.716,-73.986],'10003':[40.732,-73.989],
   '10007':[40.713,-74.008],'10009':[40.726,-73.978],'10011':[40.742,-74.001],
@@ -225,7 +186,7 @@ const ZIP_CENTROIDS: Record<string, [number, number]> = {
   // Omaha
   '68101':[41.260,-95.940],'68102':[41.258,-95.934],'68104':[41.291,-95.970],
   '68107':[41.219,-95.952],
-  // Miami
+  // Miami / Fort Lauderdale
   '33101':[25.762,-80.192],'33125':[25.772,-80.231],'33127':[25.808,-80.201],
   '33128':[25.776,-80.201],'33130':[25.758,-80.220],'33131':[25.750,-80.190],
   '33132':[25.779,-80.184],'33136':[25.783,-80.206],'33137':[25.807,-80.186],
@@ -235,7 +196,6 @@ const ZIP_CENTROIDS: Record<string, [number, number]> = {
   '33176':[25.671,-80.354],'33179':[25.963,-80.165],'33180':[25.971,-80.144],
   '33301':[26.122,-80.143],'33304':[26.145,-80.122],'33309':[26.192,-80.167],
   '33311':[26.126,-80.176],'33312':[26.083,-80.162],'33313':[26.127,-80.214],
-  // Fort Lauderdale extras
   '33317':[26.111,-80.222],'33324':[26.115,-80.261],'33328':[26.082,-80.242],
   // Raleigh
   '27601':[35.780,-78.639],'27603':[35.747,-78.641],'27604':[35.805,-78.589],
@@ -280,7 +240,7 @@ const ZIP_CENTROIDS: Record<string, [number, number]> = {
 };
 
 // 3-digit zip prefix → approximate region centroid (fallback when exact zip not in table)
-const ZIP3_CENTROIDS: Record<string, [number, number]> = {
+export const ZIP3_CENTROIDS: Record<string, [number, number]> = {
   '005':[42.36,-71.06],'006':[42.26,-71.80],'010':[42.10,-72.59],'011':[42.10,-72.59],
   '012':[42.45,-73.25],'013':[42.11,-72.59],'014':[42.58,-71.80],'015':[42.26,-71.80],
   '016':[42.26,-71.80],'017':[42.28,-71.42],'018':[42.50,-71.14],'019':[42.63,-71.32],
@@ -548,6 +508,7 @@ const ZIP3_CENTROIDS: Record<string, [number, number]> = {
   '954':[38.59,-121.49],'955':[40.80,-122.24],'956':[38.59,-121.49],'957':[38.59,-121.49],
   '958':[39.73,-121.84],'959':[39.73,-121.84],
   '960':[40.80,-122.24],'961':[39.53,-119.82],
+  '967':[19.72,-155.09],'968':[21.31,-157.86],
   '970':[45.52,-122.67],'971':[45.52,-122.67],'972':[45.52,-122.67],'973':[45.52,-122.67],
   '974':[44.05,-123.09],'975':[44.05,-123.09],'976':[45.52,-122.67],'977':[45.52,-122.67],
   '978':[45.52,-122.67],'979':[45.52,-122.67],
@@ -558,268 +519,10 @@ const ZIP3_CENTROIDS: Record<string, [number, number]> = {
   '994':[47.66,-117.43],
   '995':[61.22,-149.90],'996':[64.84,-147.72],'997':[64.84,-147.72],'998':[59.55,-135.30],
   '999':[55.35,-131.67],
-  '967':[19.72,-155.09],'968':[21.31,-157.86],
 };
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-
-  // ── Middleware factories ──────────────────────────────────────────────────
-
-  /** CDC NWSS Wastewater — public Socrata endpoint, no key needed */
-  function cdcWastewaterMiddleware(): Connect.HandleFunction {
-    const CDC_URL =
-      'https://data.cdc.gov/resource/2ew6-ywp6.json' +
-      '?$limit=10000' +
-      '&$select=county_fips,state_abbr,ptc_15d,percentile,level,date_start,county_lat,county_long' +
-      '&$order=date_start%20DESC';
-
-    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
-      if (!req.url?.startsWith('/api/cdc-wastewater')) return next();
-      if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
-      try {
-        const upstream = await fetch(CDC_URL, { headers: { Accept: 'application/json' } });
-        const body = await upstream.text();
-        if (!upstream.ok) {
-          console.error(`[PulseMap] cdc-wastewater upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
-          jsonResponse(res, 502, JSON.stringify({ error: `CDC upstream ${upstream.status}`, detail: body.slice(0, 200) }));
-          return;
-        }
-        jsonResponse(res, 200, body);
-      } catch (e) {
-        console.error('[PulseMap] cdc-wastewater fetch threw:', e);
-        jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
-      }
-    };
-  }
-
-  /** EPA AirNow — injects API key from .env.local */
-  function airNowMiddleware(): Connect.HandleFunction {
-    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
-      if (!req.url?.startsWith('/api/epa-airquality')) return next();
-      if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
-
-      const apiKey = env['AIRNOW_API_KEY'];
-      if (!apiKey) { jsonResponse(res, 200, '[]'); return; }
-
-      const parsed = new URL(req.url, 'http://localhost');
-      const zip = parsed.searchParams.get('zip');
-      const lat = parsed.searchParams.get('lat');
-      const lng = parsed.searchParams.get('lng');
-
-      let upstreamUrl: string;
-      if (zip) {
-        upstreamUrl =
-          `https://www.airnowapi.org/aq/observation/zipCode/current/` +
-          `?format=application/json&zipCode=${encodeURIComponent(zip)}&distance=25&API_KEY=${apiKey}`;
-      } else if (lat && lng) {
-        upstreamUrl =
-          `https://www.airnowapi.org/aq/observation/latLong/current/` +
-          `?format=application/json&latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}&distance=25&API_KEY=${apiKey}`;
-      } else {
-        jsonResponse(res, 200, '[]'); return;
-      }
-
-      try {
-        const upstream = await fetch(upstreamUrl, { headers: { Accept: 'application/json' } });
-        const body = await upstream.text();
-        if (!upstream.ok) {
-          console.error(`[PulseMap] epa-airquality upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
-        }
-        jsonResponse(res, upstream.ok ? 200 : 200, upstream.ok ? body : '[]');
-      } catch (e) {
-        console.error('[PulseMap] epa-airquality fetch threw:', e);
-        jsonResponse(res, 200, '[]');
-      }
-    };
-  }
-
-  /** WHO Disease Outbreak News — RSS → JSON */
-  function whoOutbreaksMiddleware(): Connect.HandleFunction {
-    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
-      if (!req.url?.startsWith('/api/who-outbreaks')) return next();
-      if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
-      try {
-        const upstream = await fetch('https://www.who.int/feeds/entity/csr/don/en/rss.xml', {
-          headers: { Accept: 'application/rss+xml, application/xml, text/xml' },
-        });
-        const body = await upstream.text();
-        if (!upstream.ok) {
-          console.error(`[PulseMap] who-outbreaks upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
-          jsonResponse(res, 502, JSON.stringify({ error: `WHO upstream ${upstream.status}`, detail: body.slice(0, 200) })); return;
-        }
-        res.writeHead(200, { 'Content-Type': 'application/xml', 'Access-Control-Allow-Origin': '*' });
-        res.end(body);
-      } catch (e) {
-        console.error('[PulseMap] who-outbreaks fetch threw:', e);
-        jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
-      }
-    };
-  }
-
-  /** CMS Hospital Compare — public, projects to minimal fields */
-  function cmsHospitalsMiddleware(): Connect.HandleFunction {
-    const CMS_URL =
-      'https://data.cms.gov/provider-data/api/1/datastore/query/xubh-q36u/0' +
-      '?limit=1500&offset=0&keys=true';
-
-    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
-      if (!req.url?.startsWith('/api/cms-hospitals')) return next();
-      if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
-      try {
-        const upstream = await fetch(CMS_URL, { headers: { Accept: 'application/json' } });
-        const body = await upstream.text();
-        if (!upstream.ok) {
-          console.error(`[PulseMap] cms-hospitals upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
-          jsonResponse(res, 502, JSON.stringify({ error: `CMS upstream ${upstream.status}`, detail: body.slice(0, 200) })); return;
-        }
-        const raw = JSON.parse(body) as { results?: Array<Record<string, unknown>> };
-        const results = (raw.results ?? []).map((row) => {
-          const zip = String(row['zip_code'] ?? '').replace(/\D/g, '').slice(0, 5);
-          const coords = ZIP_CENTROIDS[zip] ?? ZIP3_CENTROIDS[zip.slice(0, 3)];
-          return {
-            hospital_name:      row['hospital_name'] ?? '',
-            address:            row['address'] ?? '',
-            city:               row['city'] ?? '',
-            state:              row['state'] ?? '',
-            hospital_type:      row['hospital_type'] ?? '',
-            emergency_services: row['emergency_services'] ?? '',
-            lat:                coords ? coords[0] : null,
-            lng:                coords ? coords[1] : null,
-          };
-        });
-        jsonResponse(res, 200, JSON.stringify(results));
-      } catch (e) {
-        console.error('[PulseMap] cms-hospitals fetch threw:', e);
-        jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
-      }
-    };
-  }
-
-  /** NWS Active Alerts — filters to health-relevant types */
-  function nwsAlertsMiddleware(): Connect.HandleFunction {
-    const NWS_URL =
-      'https://api.weather.gov/alerts/active' +
-      '?status=actual&message_type=alert&urgency=Immediate,Expected&severity=Extreme,Severe';
-
-    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
-      if (!req.url?.startsWith('/api/nws-alerts')) return next();
-      if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
-      try {
-        const upstream = await fetch(NWS_URL, {
-          headers: {
-            Accept: 'application/geo+json',
-            'User-Agent': 'PulseMap/0.1 (community health dashboard; contact@example.com)',
-          },
-        });
-        const body = await upstream.text();
-        if (!upstream.ok) {
-          console.error(`[PulseMap] nws-alerts upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
-          jsonResponse(res, 502, JSON.stringify({ error: `NWS upstream ${upstream.status}`, detail: body.slice(0, 200) })); return;
-        }
-        const geojson = JSON.parse(body) as { features?: Array<{ type: string; geometry: unknown; properties: Record<string, unknown> }> };
-        const features = (geojson.features ?? [])
-          .filter((f) => HEALTH_ALERT_TYPES.has(String(f.properties['event'] ?? '')))
-          .map((f) => ({
-            type: 'Feature',
-            geometry: f.geometry,
-            properties: {
-              event:       f.properties['event'],
-              headline:    f.properties['headline'],
-              description: f.properties['description'],
-              severity:    f.properties['severity'],
-              urgency:     f.properties['urgency'],
-              effective:   f.properties['effective'],
-              expires:     f.properties['expires'],
-              areaDesc:    f.properties['areaDesc'],
-            },
-          }));
-        jsonResponse(res, 200, JSON.stringify(features));
-      } catch (e) {
-        console.error('[PulseMap] nws-alerts fetch threw:', e);
-        jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
-      }
-    };
-  }
-
-  /** CDC ILINet FluView — via CMU Delphi Epidata API, normalise HHS region rows */
-  function cdcFluviewMiddleware(): Connect.HandleFunction {
-    return async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
-      if (!req.url?.startsWith('/api/cdc-fluview')) return next();
-      if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
-      try {
-        const upstream = await fetch(FLUVIEW_DELPHI_URL, { headers: { Accept: 'application/json' } });
-        const body = await upstream.text();
-        if (!upstream.ok) {
-          console.error(`[PulseMap] cdc-fluview upstream error: HTTP ${upstream.status}\n${body.slice(0, 500)}`);
-          jsonResponse(res, 502, JSON.stringify({ error: `FluView upstream ${upstream.status}`, detail: body.slice(0, 200) })); return;
-        }
-        const raw = JSON.parse(body) as { result?: number; epidata?: Array<Record<string, unknown>> };
-        const normalised = (raw.epidata ?? []).map((item) => {
-          const regionRaw = String(item['region'] ?? '');
-          const region = regionRaw === 'nat'
-            ? 'National'
-            : regionRaw.startsWith('hhs')
-              ? `Region ${regionRaw.slice(3)}`
-              : regionRaw;
-          return {
-            region,
-            ili_pct:           Number(item['ili']) || 0,
-            ili_total:         Number(item['num_ili']) || 0,
-            num_providers:     Number(item['num_providers']) || 0,
-            week_ending:       String(item['epiweek'] ?? ''),
-            national_baseline: 3.1,
-          };
-        });
-        jsonResponse(res, 200, JSON.stringify(normalised));
-      } catch (e) {
-        console.error('[PulseMap] cdc-fluview fetch threw:', e);
-        jsonResponse(res, 500, JSON.stringify({ error: String(e) }));
-      }
-    };
-  }
-
-  // ── Vite config ──────────────────────────────────────────────────────────
-
-  return {
-    resolve: {
-      alias: {
-        '@': resolve(__dirname, 'src'),
-      },
-    },
-
-    build: {
-      chunkSizeWarningLimit: 2000,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            maplibre: ['maplibre-gl'],
-            deckgl: ['@deck.gl/core', '@deck.gl/layers', '@deck.gl/mapbox'],
-          },
-        },
-      },
-    },
-
-    server: {
-      port: 5173,
-    },
-
-    plugins: [
-      {
-        name: 'api-dev-proxy',
-        configureServer(server) {
-          // All handlers are registered before Vite's own file-serving middleware,
-          // so they intercept /api/* before Vite can serve the raw .ts source.
-          server.middlewares.use(cdcWastewaterMiddleware());
-          server.middlewares.use(airNowMiddleware());
-          server.middlewares.use(whoOutbreaksMiddleware());
-          server.middlewares.use(cmsHospitalsMiddleware());
-          server.middlewares.use(nwsAlertsMiddleware());
-          server.middlewares.use(cdcFluviewMiddleware());
-        },
-      },
-    ],
-  };
-});
+/** Returns [lat, lng] for a 5-digit zip, falling back to the 3-digit SCF prefix centroid. */
+export function zipToLatLng(zip: string): [number, number] | null {
+  const z = zip.replace(/\D/g, '').slice(0, 5);
+  return ZIP_CENTROIDS[z] ?? ZIP3_CENTROIDS[z.slice(0, 3)] ?? null;
+}

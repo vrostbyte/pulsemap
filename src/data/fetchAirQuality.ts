@@ -105,7 +105,9 @@ function parseApiRows(
 export async function fetchAirQuality(zip?: string): Promise<HealthSignal[]> {
   try {
     const params = zip ? `?zip=${encodeURIComponent(zip)}` : '';
-    const response = await fetch(`/api/epa-airquality${params}`);
+    const response = await fetch(`/api/epa-airquality${params}`, {
+      signal: AbortSignal.timeout(8_000),
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const rows = (await response.json()) as AirNowObservation[];
     const parsed = parseApiRows(rows, zip);

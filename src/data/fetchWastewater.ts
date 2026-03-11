@@ -59,24 +59,43 @@ const MOCK_DATA: WastewaterData[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Normalises the CDC NWSS category string to lowercase for consistent matching.
+ * Handles both the `level` field ("Very High") and fallback from numeric
+ * `percentile` (already lowercase from deriveCategory).
+ */
 function percentileToSeverity(
   category: string,
 ): HealthSignal['severity'] {
-  switch (category.toLowerCase()) {
+  switch (category.toLowerCase().trim()) {
     case 'very high': return 'critical';
     case 'high':      return 'high';
     case 'moderate':  return 'medium';
-    default:          return 'low';
+    default:          return 'low'; // "low", "minimal", unknown
   }
 }
 
 function percentileToValue(category: string): number {
-  switch (category.toLowerCase()) {
+  switch (category.toLowerCase().trim()) {
     case 'very high': return 90;
     case 'high':      return 70;
     case 'moderate':  return 45;
     default:          return 15;
   }
+}
+
+/**
+ * Converts a numeric Socrata percentile (0–100) to a category string when
+ * the `level` field is absent from the CDC response.
+ */
+function deriveCategory(percentile: string | number | undefined): string {
+  if (percentile === undefined || percentile === null || percentile === '') return 'low';
+  const p = Number(percentile);
+  if (isNaN(p)) return String(percentile).toLowerCase(); // already a category string
+  if (p >= 90) return 'very high';
+  if (p >= 75) return 'high';
+  if (p >= 40) return 'moderate';
+  return 'low';
 }
 
 function wastewaterToSignal(d: WastewaterData): HealthSignal {
@@ -107,33 +126,62 @@ function wastewaterToSignal(d: WastewaterData): HealthSignal {
 interface CdcNwssRow {
   county_fips?: string;
   county?: string;
-  percentile?: string;
+  state_abbr?: string;
+  ptc_15d?: string | number;
+  /** Numeric percentile rank (0–100). Present in all rows. */
+  percentile?: string | number;
+  /** Categorical level string: "Low" | "Moderate" | "High" | "Very High".
+   *  Present if the API returns it; fall back to deriveCategory(percentile). */
+  level?: string;
   date_start?: string;
-  county_names?: string;
-  wwtp_jurisdiction?: string;
+  county_lat?: string | number;
+  county_long?: string | number;
 }
 
+/**
+ * Parses CDC NWSS rows into WastewaterData, deduplicating per county FIPS.
+ *
+ * The CDC dataset has one row per wastewater treatment plant (WWTP), and
+ * multiple WWTPs can exist in a single county. Since the data is ordered by
+ * date_start DESC, the first occurrence of each county FIPS is the most
+ * recent and is kept; subsequent rows for the same county are discarded
+ * unless their signal level is higher.
+ */
 function parseApiRows(rows: CdcNwssRow[]): WastewaterData[] {
-  const results: WastewaterData[] = [];
+  // county_fips → highest-severity WastewaterData seen so far
+  const byFips = new Map<string, WastewaterData>();
+
   for (const row of rows) {
     const fips = row.county_fips;
-    if (!fips) continue;
-    const stateFips = fips.slice(0, 2);
-    const STATE_CENTROIDS: Record<string,[number,number]> = {"01":[32.80,-86.81],"06":[36.78,-119.42],"12":[27.77,-81.69],"13":[32.17,-82.90],"17":[40.63,-89.40],"24":[39.05,-76.64],"25":[42.41,-71.38],"26":[44.31,-85.60],"36":[42.17,-74.95],"37":[35.76,-79.02],"39":[40.42,-82.91],"42":[41.20,-77.19],"47":[35.52,-86.58],"48":[31.97,-99.90],"51":[37.43,-78.66],"53":[47.75,-120.74]};
-    const [lat, lng] = STATE_CENTROIDS[stateFips] ?? [39.5, -98.35];
+    const lat = Number(row.county_lat);
+    const lng = Number(row.county_long);
+    if (!fips || isNaN(lat) || isNaN(lng)) continue;
 
-    results.push({
+    // Prefer the `level` field (e.g. "Very High"); fall back to numeric `percentile`
+    const category = row.level ? row.level : deriveCategory(row.percentile);
+
+    const data: WastewaterData = {
       countyFips: fips,
-      countyName: row.county_names ?? 'Unknown',
-      state: row.wwtp_jurisdiction ?? '',
-      percentileCategory: row.percentile ?? 'low',
-      ptcChangeFrom15d: Number((row as Record<string, unknown>)['ptc_15d']) || 0,
+      countyName: row.county ?? 'Unknown',
+      state: row.state_abbr ?? '',
+      percentileCategory: category,
+      ptcChangeFrom15d: Number(row.ptc_15d) || 0,
       firstSampleDateCollected: row.date_start ?? new Date().toISOString(),
       latitude: lat,
       longitude: lng,
-    });
+    };
+
+    // Keep whichever entry for this county has the higher severity value
+    const existing = byFips.get(fips);
+    if (
+      !existing ||
+      percentileToValue(category) > percentileToValue(existing.percentileCategory)
+    ) {
+      byFips.set(fips, data);
+    }
   }
-  return results;
+
+  return Array.from(byFips.values());
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -145,7 +193,9 @@ function parseApiRows(rows: CdcNwssRow[]): WastewaterData[] {
  */
 export async function fetchWastewater(): Promise<HealthSignal[]> {
   try {
-    const response = await fetch('/api/cdc-wastewater');
+    const response = await fetch('/api/cdc-wastewater', {
+      signal: AbortSignal.timeout(8_000), // fail fast so mock fallback kicks in quickly
+    });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }

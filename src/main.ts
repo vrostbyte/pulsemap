@@ -118,11 +118,26 @@ async function loadData(zip?: string): Promise<void> {
 
 // ─── Event listeners ──────────────────────────────────────────────────────────
 
-// Wait for the map to be ready before doing the first data fetch
+// Start the initial data load as soon as the map style is ready.
+// The inline style fires 'load' almost instantly (no network request).
+// The fallback timer ensures data still loads if the map event is delayed.
+let dataLoaded = false;
+
 document.addEventListener('map:ready', () => {
+  if (dataLoaded) return;
+  dataLoaded = true;
   logger.info('map:ready — starting initial data load');
   void loadData();
 });
+
+// Fallback: if map:ready hasn't fired within 5 s (e.g. style fetch blocked),
+// start loading data anyway so the sidebar and scores are still populated.
+setTimeout(() => {
+  if (dataLoaded) return;
+  dataLoaded = true;
+  logger.warn('map:ready timeout — starting data load without map');
+  void loadData();
+}, 5000);
 
 // Handle ZIP code search
 document.addEventListener('search:zip', (e: Event) => {

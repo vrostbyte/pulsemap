@@ -194,7 +194,7 @@ function parseApiRows(rows: CdcNwssRow[]): WastewaterData[] {
 export async function fetchWastewater(): Promise<HealthSignal[]> {
   try {
     const response = await fetch('/api/cdc-wastewater', {
-      signal: AbortSignal.timeout(25_000), // CDC can be slow on cold starts
+      signal: AbortSignal.timeout(8_000), // fail fast so mock fallback kicks in quickly
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);

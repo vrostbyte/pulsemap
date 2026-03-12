@@ -1,20 +1,12 @@
 /**
- * PulseMap — US Census Bureau Geocoding API CORS proxy (Vercel Edge Function).
- *
- * The Census geocoder doesn't send CORS headers, so browsers can't call it
- * directly.  This proxy adds CORS headers and forwards the request.
- *
- * Usage: GET /api/geocode?address=<address>&benchmark=Public_AR_Current
- * Returns: Census geocoder JSON response
- *
- * Upstream: https://geocoding.geo.census.gov/geocoder/locations/onelineaddress
- * Docs:     https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html
+ * PulseMap — Census Geocoding CORS proxy (Vercel Edge Function).
+ * Accepts ?zip=XXXXX and returns FIPS + coordinates.
+ * Uses the geographies endpoint so we get county FIPS back.
  */
-
 export const config = { runtime: 'edge' };
 
-const CENSUS_GEOCODER_BASE =
-  'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress';
+const CENSUS_BASE =
+  'https://geocoding.geo.census.gov/geocoder/geographies/address';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -28,43 +20,36 @@ export default async function handler(request: Request): Promise<Response> {
   }
 
   const url = new URL(request.url);
-  const address = url.searchParams.get('address');
+  const zip = url.searchParams.get('zip');
 
-  if (!address) {
+  if (!zip || !/^\d{5}$/.test(zip)) {
     return new Response(
-      JSON.stringify({ error: 'Missing required parameter: address' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-      },
+      JSON.stringify({ error: 'Missing or invalid zip parameter (5 digits required)' }),
+      { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } },
     );
   }
 
-  const benchmark = url.searchParams.get('benchmark') ?? 'Public_AR_Current';
-
   const upstreamUrl =
-    `${CENSUS_GEOCODER_BASE}` +
-    `?address=${encodeURIComponent(address)}` +
-    `&benchmark=${encodeURIComponent(benchmark)}` +
-    `&format=json`;
+    `${CENSUS_BASE}` +
+    `?benchmark=Public_AR_Current` +
+    `&vintage=Current_Current` +
+    `&format=json` +
+    `&zip=${encodeURIComponent(zip)}`;
 
   try {
     const upstream = await fetch(upstreamUrl, {
       headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!upstream.ok) {
       return new Response(
         JSON.stringify({ error: `Census geocoder returned ${upstream.status}` }),
-        {
-          status: 502,
-          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-        },
+        { status: 502, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } },
       );
     }
 
     const data = await upstream.text();
-
     return new Response(data, {
       status: 200,
       headers: {

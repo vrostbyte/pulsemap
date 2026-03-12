@@ -1,17 +1,22 @@
 /**
- * PulseMap — WHO Disease Outbreak News proxy (Vercel Edge Function).
- *
- * Fetches the WHO Disease Outbreak News RSS feed and passes the raw XML
- * through to the browser.  The client uses DOMParser to parse the XML,
- * so no server-side XML parsing is needed here.
- *
- * Upstream RSS: https://www.who.int/feeds/entity/csr/don/en/rss.xml
- * Cache:        30 minutes
+ * PulseMap — Disease outbreak proxy via ReliefWeb API (Vercel Edge Function).
+ * ReliefWeb returns JSON with native lat/lon — no XML parsing needed.
+ * Docs: https://apidoc.reliefweb.int/
  */
-
 export const config = { runtime: 'edge' };
 
-const WHO_RSS_URL = 'https://www.who.int/feeds/entity/csr/don/en/rss.xml';
+const RELIEFWEB_URL =
+  'https://api.reliefweb.int/v2/reports' +
+  '?appname=pulsemap' +
+  '&filter[field]=primary_type.name' +
+  '&filter[value]=Epidemic' +
+  '&fields[include][]=title' +
+  '&fields[include][]=date.created' +
+  '&fields[include][]=country.name' +
+  '&fields[include][]=country.location' +
+  '&fields[include][]=primary_type.name' +
+  '&limit=50' +
+  '&sort[]=date.created:desc';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -25,26 +30,44 @@ export default async function handler(request: Request): Promise<Response> {
   }
 
   try {
-    const upstream = await fetch(WHO_RSS_URL, {
-      headers: { Accept: 'application/rss+xml, application/xml, text/xml' },
+    const upstream = await fetch(RELIEFWEB_URL, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!upstream.ok) {
       return new Response(
-        JSON.stringify({ error: `WHO RSS returned ${upstream.status}` }),
-        {
-          status: 502,
-          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-        },
+        JSON.stringify({ error: `ReliefWeb returned ${upstream.status}` }),
+        { status: 502, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } },
       );
     }
 
-    const xml = await upstream.text();
+    const json = await upstream.json() as {
+      data?: Array<{
+        fields: {
+          title: string;
+          date: { created: string };
+          country?: Array<{ name: string; location?: { lat: number; lon: number } }>;
+        };
+      }>;
+    };
 
-    return new Response(xml, {
+    // Normalise to flat array the client expects
+    const outbreaks = (json.data ?? []).map((item) => {
+      const country = item.fields.country?.[0];
+      return {
+        title:     item.fields.title,
+        date:      item.fields.date.created,
+        country:   country?.name ?? 'Unknown',
+        lat:       country?.location?.lat ?? 0,
+        lng:       country?.location?.lon ?? 0,
+      };
+    }).filter(o => o.lat !== 0 && o.lng !== 0);
+
+    return new Response(JSON.stringify(outbreaks), {
       status: 200,
       headers: {
-        'Content-Type': 'application/xml',
+        'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=1800, s-maxage=1800',
         ...CORS_HEADERS,
       },

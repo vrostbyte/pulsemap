@@ -1,16 +1,13 @@
 /**
- * PulseMap — EPA AirNow API proxy (Vercel Edge Function).
- *
- * Adds the AirNow API key (from environment variable) and sets CORS headers.
- * Accepts ?zip= for a specific location or ?lat=&lng= for coordinate-based
- * queries.  Defaults to a 25-mile radius when querying by ZIP.
- *
- * Upstream: https://www.airnowapi.org/aq/observation/zipCode/current/
- * API key:  Free from https://docs.airnowapi.org/account/request/
- * Cache:    1 hour (AirNow updates hourly)
+ * PulseMap — EPA AirNow national coverage proxy (Vercel Edge Function).
+ * Uses the AirNow reporting area file feed for national coverage.
+ * No API key consumed, no rate limit, ~400 reporting areas updated every 30min.
+ * File docs: https://files.airnowtech.org/
  */
-
 export const config = { runtime: 'edge' };
+
+// Pipe-delimited flat file — all current US AQI reporting areas
+const AIRNOW_FILE_URL = 'https://files.airnowtech.org/airnow/today/reportingarea.dat';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -18,74 +15,75 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const AIRNOW_BASE = 'https://www.airnowapi.org/aq/observation';
+interface AirNowArea {
+  lat: number;
+  lng: number;
+  reportingArea: string;
+  stateCode: string;
+  aqi: number;
+  category: number;
+  pollutant: string;
+}
+
+function parseDatFile(text: string): AirNowArea[] {
+  const results: AirNowArea[] = [];
+  const lines = text.split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const parts = line.split('|');
+    if (parts.length < 10) continue;
+    const lat = parseFloat(parts[8] ?? '');
+    const lng = parseFloat(parts[9] ?? '');
+    const aqi = parseInt(parts[7] ?? '', 10);
+    if (isNaN(lat) || isNaN(lng) || isNaN(aqi) || aqi < 0) continue;
+    // Only keep highest AQI per reporting area
+    results.push({
+      reportingArea: (parts[1] ?? '').trim(),
+      stateCode:     (parts[2] ?? '').trim(),
+      lat,
+      lng,
+      aqi,
+      category:  parseInt(parts[6] ?? '1', 10),
+      pollutant: (parts[5] ?? 'PM2.5').trim(),
+    });
+  }
+  // Deduplicate by reportingArea — keep highest AQI
+  const byArea = new Map<string, AirNowArea>();
+  for (const area of results) {
+    const existing = byArea.get(area.reportingArea);
+    if (!existing || area.aqi > existing.aqi) {
+      byArea.set(area.reportingArea, area);
+    }
+  }
+  return Array.from(byArea.values());
+}
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const apiKey = process.env['AIRNOW_API_KEY'];
-  if (!apiKey) {
-    // Return empty array instead of an error — the client falls back to mock data
-    return new Response('[]', {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-    });
-  }
-
-  const url = new URL(request.url);
-  const zip = url.searchParams.get('zip');
-  const lat = url.searchParams.get('lat');
-  const lng = url.searchParams.get('lng');
-
-  let upstreamUrl: string;
-
-  if (zip) {
-    upstreamUrl =
-      `${AIRNOW_BASE}/zipCode/current/` +
-      `?format=application/json` +
-      `&zipCode=${encodeURIComponent(zip)}` +
-      `&distance=25` +
-      `&API_KEY=${apiKey}`;
-  } else if (lat && lng) {
-    upstreamUrl =
-      `${AIRNOW_BASE}/latLong/current/` +
-      `?format=application/json` +
-      `&latitude=${encodeURIComponent(lat)}` +
-      `&longitude=${encodeURIComponent(lng)}` +
-      `&distance=25` +
-      `&API_KEY=${apiKey}`;
-  } else {
-    // No location provided — return empty array
-    return new Response('[]', {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-    });
-  }
-
   try {
-    const upstream = await fetch(upstreamUrl, {
-      headers: { Accept: 'application/json' },
+    const upstream = await fetch(AIRNOW_FILE_URL, {
+      headers: { Accept: 'text/plain' },
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!upstream.ok) {
       return new Response(
-        JSON.stringify({ error: `AirNow API returned ${upstream.status}` }),
-        {
-          status: 502,
-          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-        },
+        JSON.stringify({ error: `AirNow file feed returned ${upstream.status}` }),
+        { status: 502, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } },
       );
     }
 
-    const data = await upstream.text();
+    const text = await upstream.text();
+    const areas = parseDatFile(text);
 
-    return new Response(data, {
+    return new Response(JSON.stringify(areas), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        'Cache-Control': 'public, max-age=1800, s-maxage=1800',
         ...CORS_HEADERS,
       },
     });

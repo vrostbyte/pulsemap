@@ -67,7 +67,8 @@ function extractCountry(title: string): string {
   // Titles follow "Disease – Country – update N" pattern
   const parts = title.split(/[–—-]/);
   if (parts.length >= 2) {
-    return parts[parts.length - 1]
+    const last = parts[parts.length - 1] ?? '';
+    return last
       .replace(/update\s*\d+/i, '')
       .replace(/\([^)]*\)/g, '')
       .trim();

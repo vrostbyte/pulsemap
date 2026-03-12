@@ -36,7 +36,7 @@ async function redisSet(url: string, token: string, key: string, value: string, 
     await fetch(`${url}/set/${key}?EX=${ttl}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(value),
+      body: value,
     });
   } catch { /* best effort */ }
 }

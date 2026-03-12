@@ -45,9 +45,9 @@ export default async function handler(request: Request): Promise<Response> {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const redisUrl = (globalThis as Record<string, unknown>)['UPSTASH_REDIS_REST_URL'] as string | undefined;
-  const redisToken = (globalThis as Record<string, unknown>)['UPSTASH_REDIS_REST_TOKEN'] as string | undefined;
-  const appToken = (globalThis as Record<string, unknown>)['CDC_SOCRATA_APP_TOKEN'] as string | undefined;
+  const redisUrl = process.env['UPSTASH_REDIS_REST_URL'];
+  const redisToken = process.env['UPSTASH_REDIS_REST_TOKEN'];
+  const appToken = process.env['CDC_SOCRATA_APP_TOKEN'];
 
   // ── Step 1: Try Redis cache ────────────────────────────────────────────────
   if (redisUrl && redisToken) {

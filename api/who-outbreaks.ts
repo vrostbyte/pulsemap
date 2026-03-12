@@ -5,18 +5,7 @@
  */
 export const config = { runtime: 'edge' };
 
-const RELIEFWEB_URL =
-  'https://api.reliefweb.int/v2/reports' +
-  '?appname=pulsemap' +
-  '&filter[field]=primary_type.name' +
-  '&filter[value]=Epidemic' +
-  '&fields[include][]=title' +
-  '&fields[include][]=date.created' +
-  '&fields[include][]=country.name' +
-  '&fields[include][]=country.location' +
-  '&fields[include][]=primary_type.name' +
-  '&limit=50' +
-  '&sort[]=date.created:desc';
+const RELIEFWEB_URL = 'https://api.reliefweb.int/v2/reports?appname=pulsemap';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -31,8 +20,15 @@ export default async function handler(request: Request): Promise<Response> {
 
   try {
     const upstream = await fetch(RELIEFWEB_URL, {
-      headers: { Accept: 'application/json' },
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(10_000),
+      body: JSON.stringify({
+        filter: { field: 'primary_type.name', value: 'Epidemic' },
+        fields: { include: ['title', 'date.created', 'country.name', 'country.location'] },
+        limit: 50,
+        sort: ['date.created:desc'],
+      }),
     });
 
     if (!upstream.ok) {

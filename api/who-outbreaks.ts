@@ -25,7 +25,7 @@ export default async function handler(request: Request): Promise<Response> {
       signal: AbortSignal.timeout(10_000),
       body: JSON.stringify({
         filter: { field: 'primary_type.name', value: 'Epidemic' },
-        fields: { include: ['title', 'date.created', 'country.name', 'country.location'] },
+        fields: { include: ['title', 'date.created', 'country'] },
         limit: 50,
         sort: ['date.created:desc'],
       }),

@@ -8,7 +8,7 @@ export const config = { runtime: 'edge' };
 const CDC_NWSS_URL =
   'https://data.cdc.gov/resource/2ew6-ywp6.json' +
   '?$limit=10000' +
-  '&$select=county_fips,state_abbr,ptc_15d,percentile,level,date_start,county_lat,county_long' +
+  '&$select=county_fips,county_names,wwtp_jurisdiction,ptc_15d,percentile,date_start,date_end' +
   '&$order=date_start%20DESC';
 
 const CACHE_KEY = 'pulsemap:wastewater:v1';

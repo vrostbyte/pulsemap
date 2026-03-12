@@ -57,14 +57,10 @@ export async function zipToFips(zip: string): Promise<FipsResult> {
   const cached = cache.get(zip);
   if (cached !== undefined) return cached;
 
-  const url =
-    `https://geocoding.geo.census.gov/geocoder/geographies/address` +
-    `?benchmark=Public_AR_Current` +
-    `&vintage=Current_Current` +
-    `&format=json` +
-    `&zip=${encodeURIComponent(zip)}`;
+  // Route through /api/geocode proxy to avoid CORS issues
+  const url = `/api/geocode?zip=${encodeURIComponent(zip)}`;
 
-  logger.debug('zipToFips: fetching Census Geocoding API', { zip, url });
+  logger.debug('zipToFips: fetching via proxy', { zip, url });
 
   const response = await fetch(url);
   if (!response.ok) {

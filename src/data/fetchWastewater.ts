@@ -125,8 +125,8 @@ function wastewaterToSignal(d: WastewaterData): HealthSignal {
 
 interface CdcNwssRow {
   county_fips?: string;
-  county?: string;
-  state_abbr?: string;
+  county_names?: string;       // actual CDC field name
+  wwtp_jurisdiction?: string;  // actual CDC field name (state)
   ptc_15d?: string | number;
   /** Numeric percentile rank (0–100). Present in all rows. */
   percentile?: string | number;
@@ -134,8 +134,9 @@ interface CdcNwssRow {
    *  Present if the API returns it; fall back to deriveCategory(percentile). */
   level?: string;
   date_start?: string;
-  county_lat?: string | number;
-  county_long?: string | number;
+  date_end?: string;
+  county_lat?: string | number;  // enriched by api/cdc-wastewater.ts
+  county_long?: string | number; // enriched by api/cdc-wastewater.ts
 }
 
 /**
@@ -165,8 +166,8 @@ function parseApiRows(rows: CdcNwssRow[]): WastewaterData[] {
 
     const data: WastewaterData = {
       countyFips: fips,
-      countyName: row.county ?? 'Unknown',
-      state: row.state_abbr ?? '',
+      countyName: row.county_names ?? 'Unknown',
+      state: row.wwtp_jurisdiction ?? '',
       percentileCategory: category,
       ptcChangeFrom15d: Number(row.ptc_15d) || 0,
       firstSampleDateCollected: row.date_start ?? new Date().toISOString(),

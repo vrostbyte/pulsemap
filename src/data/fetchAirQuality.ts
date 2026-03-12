@@ -76,9 +76,10 @@ function parseApiRows(
 ): AirQualityData[] {
   const results: AirQualityData[] = [];
   for (const row of rows) {
-    const aqi = row.AQI;
-    const lat = row.Latitude;
-    const lng = row.Longitude;
+    // New file feed uses lowercase lat/lng/aqi fields
+    const aqi = (row as Record<string,unknown>)['aqi'] as number ?? row.AQI;
+    const lat = (row as Record<string,unknown>)['lat'] as number ?? row.Latitude;
+    const lng = (row as Record<string,unknown>)['lng'] as number ?? row.Longitude;
     if (aqi === undefined || lat === undefined || lng === undefined) continue;
 
     results.push({

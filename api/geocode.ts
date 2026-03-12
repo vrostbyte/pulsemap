@@ -46,7 +46,7 @@ export default async function handler(request: Request): Promise<Response> {
     const results = await upstream.json() as Array<{
       lat: string; lon: string;
       display_name: string;
-      address?: { county?: string; state?: string; postcode?: string };
+      address?: { county?: string; state?: string; state_code?: string; postcode?: string };
     }>;
 
     if (!results.length) {

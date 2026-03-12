@@ -25,31 +25,40 @@ interface AirNowArea {
   pollutant: string;
 }
 
+// Category name → numeric severity (matches EPA AQI scale)
+const CATEGORY_MAP: Record<string, number> = {
+  'Good': 1, 'Moderate': 2,
+  'Unhealthy for Sensitive Groups': 3,
+  'Unhealthy': 4, 'Very Unhealthy': 5, 'Hazardous': 6,
+};
+
 function parseDatFile(text: string): AirNowArea[] {
-  const results: AirNowArea[] = [];
-  const lines = text.split('\n');
-  for (const line of lines) {
+  // Actual column layout (pipe-delimited):
+  // 0=forecast_date 1=obs_date 2=obs_time 3=tz 4=offset
+  // 5=data_type(O=current,Y=yesterday) 6=primary(Y/N)
+  // 7=area_name 8=state 9=lat 10=lng 11=pollutant 12=aqi 13=category
+  const byArea = new Map<string, AirNowArea>();
+  for (const line of text.split('\n')) {
     if (!line.trim()) continue;
-    const parts = line.split('|');
-    if (parts.length < 10) continue;
-    const lat = parseFloat(parts[8] ?? '');
-    const lng = parseFloat(parts[9] ?? '');
-    const aqi = parseInt(parts[7] ?? '', 10);
+    const p = line.split('|');
+    if (p.length < 14) continue;
+    // Only current observations, primary pollutant per area
+    if ((p[5] ?? '').trim() !== 'O') continue;
+    if ((p[6] ?? '').trim() !== 'Y') continue;
+    const lat = parseFloat(p[9] ?? '');
+    const lng = parseFloat(p[10] ?? '');
+    const aqi = parseInt(p[12] ?? '', 10);
     if (isNaN(lat) || isNaN(lng) || isNaN(aqi) || aqi < 0) continue;
-    // Only keep highest AQI per reporting area
-    results.push({
-      reportingArea: (parts[1] ?? '').trim(),
-      stateCode:     (parts[2] ?? '').trim(),
+    const area: AirNowArea = {
+      reportingArea: (p[7] ?? '').trim(),
+      stateCode:     (p[8] ?? '').trim(),
       lat,
       lng,
       aqi,
-      category:  parseInt(parts[6] ?? '1', 10),
-      pollutant: (parts[5] ?? 'PM2.5').trim(),
-    });
-  }
-  // Deduplicate by reportingArea — keep highest AQI
-  const byArea = new Map<string, AirNowArea>();
-  for (const area of results) {
+      category:  CATEGORY_MAP[(p[13] ?? '').trim()] ?? 1,
+      pollutant: (p[11] ?? 'PM2.5').trim(),
+    };
+    // Keep highest AQI per reporting area
     const existing = byArea.get(area.reportingArea);
     if (!existing || area.aqi > existing.aqi) {
       byArea.set(area.reportingArea, area);

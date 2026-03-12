@@ -153,9 +153,12 @@ function parseApiRows(rows: CdcNwssRow[]): WastewaterData[] {
 
   for (const row of rows) {
     const fips = row.county_fips;
-    const lat = Number(row.county_lat);
-    const lng = Number(row.county_long);
-    if (!fips || isNaN(lat) || isNaN(lng)) continue;
+    const coords = row.county_lat != null
+      ? [Number(row.county_lat), Number(row.county_long)] as [number, number]
+      : null;
+    if (!fips) continue;
+    const lat = coords?.[0] ?? 0;
+    const lng = coords?.[1] ?? 0;
 
     // Prefer the `level` field (e.g. "Very High"); fall back to numeric `percentile`
     const category = row.level ? row.level : deriveCategory(row.percentile);

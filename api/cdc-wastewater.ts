@@ -4,6 +4,7 @@
  * Cache TTL: 1 hour (data published weekly).
  */
 export const config = { runtime: 'edge' };
+import { fipsToLatLng } from './_county-centroids.js';
 
 const CDC_NWSS_URL =
   'https://data.cdc.gov/resource/2ew6-ywp6.json' +
@@ -89,7 +90,22 @@ export default async function handler(request: Request): Promise<Response> {
       await redisSet(redisUrl, redisToken, CACHE_KEY, data, CACHE_TTL);
     }
 
-    return new Response(data, {
+    // Enrich rows with lat/lng from county FIPS centroid lookup
+    let enriched = data;
+    try {
+      const rows = JSON.parse(data) as Array<Record<string, unknown>>;
+      for (const row of rows) {
+        const fips = String(row['county_fips'] ?? '').padStart(5, '0');
+        const coords = fipsToLatLng(fips);
+        if (coords) {
+          row['county_lat'] = coords[0];
+          row['county_long'] = coords[1];
+        }
+      }
+      enriched = JSON.stringify(rows);
+    } catch { /* use raw data if parse fails */ }
+
+    return new Response(enriched, {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

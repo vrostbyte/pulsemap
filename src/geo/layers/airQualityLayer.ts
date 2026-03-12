@@ -56,7 +56,7 @@ export function createAirQualityLayer(
     getPosition: (d: HealthSignal) => [d.longitude, d.latitude],
 
     // Smaller radius than wastewater — these are zip-level points, not counties
-    getRadius: (_d: HealthSignal) => 10_000,
+    getRadius: (d: HealthSignal) => 8_000 + (d.value / 100) * 22_000,
 
     getFillColor: (d: HealthSignal) => aqiToColor(d.rawValue),
 

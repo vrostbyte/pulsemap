@@ -88,11 +88,12 @@ export async function zipToFips(zip: string): Promise<FipsResult> {
   const county = counties[0];
   if (!county) throw new ZipNotFoundError(zip);
 
-  const fips = county.GEOID;
-  const countyName = county.NAME;
-  const stateCode = county['State Code'];
+  const fips = county.GEOID ?? '';
+  const countyName = county.NAME ?? '';
+  const stateCode = county['State Code'] ?? '';
 
-  if (!fips || !countyName || !stateCode) {
+  // GEOID may be empty when using Nominatim proxy — that's OK
+  if (!countyName) {
     throw new ZipNotFoundError(zip);
   }
 

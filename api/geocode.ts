@@ -65,7 +65,7 @@ export default async function handler(request: Request): Promise<Response> {
           geographies: {
             Counties: [{
               NAME: r.address?.county ?? r.display_name.split(',')[1]?.trim() ?? '',
-              'State Code': r.address?.state ?? '',
+              'State Code': r.address?.state_code ?? r.address?.state ?? '',
               GEOID: '',
             }],
           },

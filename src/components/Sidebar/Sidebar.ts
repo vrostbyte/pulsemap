@@ -76,6 +76,7 @@ export class Sidebar {
     const alertChevron = document.createElement('span');
     alertChevron.style.cssText = 'color:#8892a4;font-size:11px;transition:transform 0.2s;';
     alertChevron.textContent = '▼';
+    alertChevron.style.transform = 'rotate(-90deg)';
 
     alertHeader.appendChild(alertTitleEl);
     alertHeader.appendChild(alertChevron);
@@ -90,7 +91,7 @@ export class Sidebar {
     alertHeader.addEventListener('click', () => {
       const isExpanded = this.alertListEl.style.display !== 'none';
       this.alertListEl.style.display = isExpanded ? 'none' : 'flex';
-      alertChevron.style.transform = isExpanded ? '' : 'rotate(180deg)';
+      alertChevron.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)';
     });
 
     alertSection.appendChild(this.alertListEl);

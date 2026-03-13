@@ -143,11 +143,11 @@ export async function fetchHeatAlerts(): Promise<HealthSignal[]> {
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-    const collection = (await response.json()) as NwsAlertCollection;
+    const collection = (await response.json()) as NwsAlertFeature[];
     const signals: HealthSignal[] = [];
 
-    for (let i = 0; i < collection.features.length; i++) {
-      const feature = collection.features[i];
+    for (let i = 0; i < collection.length; i++) {
+      const feature = collection[i];
       if (!feature) continue;
 
       const props = feature.properties;

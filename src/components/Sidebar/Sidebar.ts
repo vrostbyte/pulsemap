@@ -91,7 +91,7 @@ export class Sidebar {
     alertHeader.addEventListener('click', () => {
       const isExpanded = this.alertListEl.style.display !== 'none';
       this.alertListEl.style.display = isExpanded ? 'none' : 'flex';
-      alertChevron.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)';
+      alertChevron.style.transform = isExpanded ? 'rotate(-90deg)' : 'rotate(0deg)';
     });
 
     alertSection.appendChild(this.alertListEl);

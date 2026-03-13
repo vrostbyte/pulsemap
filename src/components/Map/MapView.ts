@@ -84,7 +84,7 @@ export class MapView {
 
     // Apply full-viewport styling to the container element
     container.style.cssText =
-      'position:fixed;top:0;left:0;right:0;bottom:0;background:#0a0f1a;';
+      'position:fixed;top:48px;left:0;right:0;height:calc(100vh - 48px);background:#0a0f1a;';
 
     this.map = new maplibregl.Map({
       container,

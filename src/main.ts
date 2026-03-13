@@ -13,6 +13,7 @@
  */
 
 import type { AppState, HealthSignal } from '@/types/index.js';
+import { TopBar } from '@/components/TopBar/TopBar.js';
 import { MapView } from '@/components/Map/MapView.js';
 import { Sidebar } from '@/components/Sidebar/Sidebar.js';
 import { ZipSearch } from '@/components/ZipSearch/ZipSearch.js';
@@ -61,6 +62,7 @@ if (!appEl) throw new Error('Missing #app element in index.html');
 const mapContainer = document.createElement('div');
 appEl.appendChild(mapContainer);
 
+const topBar    = new TopBar(appEl);
 const mapView   = new MapView(mapContainer);
 const sidebar   = new Sidebar(appEl);
 const riskCard  = new RiskScoreCard('risk-score-card');
@@ -155,6 +157,8 @@ async function loadData(zip?: string): Promise<void> {
 
   const globalScore = computeGlobalScore([signals]);
   riskCard.update(globalScore, zip !== undefined);
+  topBar.setStatus(globalScore);
+  topBar.setUpdated();
 
   const score = state.healthScore;
   if (score) {

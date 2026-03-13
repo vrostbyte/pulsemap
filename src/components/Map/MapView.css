@@ -4,10 +4,10 @@
 
 .mapContainer {
   position: fixed;
-  top: 0;
+  top: 48px;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: calc(100vh - 48px);
   background-color: #0a0f1a;
   z-index: 0;
 }

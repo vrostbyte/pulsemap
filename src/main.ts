@@ -197,10 +197,10 @@ async function loadData(zip?: string): Promise<void> {
   if (score) {
     const sitrepAnomalies: SitrepAnomaly[] = score.anomalies.map((a) => ({
       source:    anomalySource(a.message),
-      direction: ANOMALY_DIRECTION[a.severity] ?? 'elevated',
+      direction: (ANOMALY_DIRECTION[a.severity] ?? 'elevated') as string,
       location:  anomalyLocation(a.message),
       context:   `${a.zScore.toFixed(1)}× above historical average`,
-      severity:  ANOMALY_SEVERITY_NUM[a.severity] ?? 20,
+      severity:  (ANOMALY_SEVERITY_NUM[a.severity] ?? 20) as number,
     }));
 
     const anomalySources = new Set(sitrepAnomalies.map((s) => s.source));

@@ -20,7 +20,8 @@ import type { ZipSearchEventDetail } from '@/components/ZipSearch/ZipSearch.js';
 import { LayerControls } from '@/components/LayerControls/LayerControls.js';
 import type { LayerToggleEventDetail } from '@/components/LayerControls/LayerControls.js';
 import { AlertBanner } from '@/components/AlertBanner/AlertBanner.js';
-import { fetchAllHealthData, getDataFreshness } from '@/data/aggregator.js';
+import { RiskScoreCard } from '@/components/RiskScore/RiskScore.js';
+import { fetchAllHealthData, getDataFreshness, computeGlobalScore } from '@/data/aggregator.js';
 import { calculateHealthScore } from '@/scoring/communityRiskScore.js';
 import { logger } from '@/utils/logger.js';
 
@@ -60,6 +61,7 @@ appEl.appendChild(mapContainer);
 
 const mapView   = new MapView(mapContainer);
 const sidebar   = new Sidebar(appEl);
+const riskCard  = new RiskScoreCard('risk-score-card');
 const zipSearch = new ZipSearch(appEl);
 const layerControls = new LayerControls(appEl, state.activeLayerTypes);
 const alertBanner = new AlertBanner(appEl);
@@ -108,6 +110,9 @@ async function loadData(zip?: string): Promise<void> {
 
   mapView.updateLayers(signals, state.activeLayerTypes);
   refreshScore();
+
+  const globalScore = computeGlobalScore([signals]);
+  riskCard.update(globalScore, zip !== undefined);
 
   const freshness = getDataFreshness();
   sidebar.updateSourceFreshness(freshness);

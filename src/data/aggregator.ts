@@ -110,3 +110,17 @@ export async function fetchAllHealthData(zip?: string): Promise<HealthSignal[]> 
   logger.info(`aggregator: loaded ${allSignals.length} total signals`);
   return allSignals;
 }
+
+/**
+ * Computes an average risk score across all provided signal arrays.
+ * Each sub-array represents one data source. Empty arrays are ignored.
+ *
+ * @param signalArrays - One array per data source
+ * @returns Average .value (0–100), or 0 if all arrays are empty
+ */
+export function computeGlobalScore(signalArrays: HealthSignal[][]): number {
+  const all = signalArrays.flat();
+  if (all.length === 0) return 0;
+  const sum = all.reduce((acc, s) => acc + s.value, 0);
+  return Math.max(0, Math.min(100, Math.round(sum / all.length)));
+}

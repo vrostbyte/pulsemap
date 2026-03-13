@@ -103,6 +103,10 @@ export class Sidebar {
     }
     sourceSection.appendChild(this.sourceListEl);
 
+    const riskCardSlot = document.createElement('div');
+    riskCardSlot.id = 'risk-score-card';
+    this.container.appendChild(riskCardSlot);
+
     this.container.appendChild(scoreSection);
     this.container.appendChild(alertSection);
     this.container.appendChild(sourceSection);

@@ -60,6 +60,7 @@ export interface WastewaterData {
   /** 'low' | 'moderate' | 'high' | 'very high' */
   percentileCategory: string;
   /** Percent change in SARS-CoV-2 signal over the past 15 days */
+  percentile: number;
   ptcChangeFrom15d: number;
   firstSampleDateCollected: string;
   latitude: number;

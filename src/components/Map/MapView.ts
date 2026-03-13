@@ -24,6 +24,7 @@ import { createHospitalLayer } from '@/geo/layers/hospitalLayer.js';
 import { createHeatLayer } from '@/geo/layers/heatLayer.js';
 import { createPollenLayer } from '@/geo/layers/pollenLayer.js';
 import { createWildfireLayer } from '@/geo/layers/wildfireLayer.js';
+import { createUVLayer } from '@/geo/layers/uvLayer.js';
 
 // ─── Minimal offline map style ────────────────────────────────────────────────
 // A self-contained MapLibre style with no external tile sources.
@@ -83,7 +84,7 @@ export class MapView {
   private container: HTMLElement;
   private hiddenLayers: Set<string> = new Set();
   private lastSignals: HealthSignal[] = [];
-  private lastActiveTypes: Set<HealthSignal['type']> = new Set(['wastewater', 'flu', 'airquality', 'outbreak', 'hospital', 'weather', 'pollen', 'wildfire']);
+  private lastActiveTypes: Set<HealthSignal['type']> = new Set(['wastewater', 'flu', 'airquality', 'outbreak', 'hospital', 'weather', 'pollen', 'wildfire', 'uv']);
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -167,7 +168,7 @@ export class MapView {
     activeTypes?: Set<HealthSignal['type']>,
   ): void {
     this.lastSignals = signals;
-    this.lastActiveTypes = activeTypes ?? new Set<HealthSignal['type']>(['wastewater', 'flu', 'airquality', 'outbreak', 'hospital', 'weather']);
+    this.lastActiveTypes = activeTypes ?? new Set<HealthSignal['type']>(['wastewater', 'flu', 'airquality', 'outbreak', 'hospital', 'weather', 'pollen', 'wildfire', 'uv']);
     this.rerenderLayers();
   }
 
@@ -206,6 +207,10 @@ export class MapView {
 
     if (active.has('wildfire') && !this.hiddenLayers.has('wildfire')) {
       layers.push(createWildfireLayer(signals, this.handleHover));
+    }
+
+    if (active.has('uv') && !this.hiddenLayers.has('uv')) {
+      layers.push(createUVLayer(signals, this.handleHover));
     }
 
     this.overlay.setProps({ layers });

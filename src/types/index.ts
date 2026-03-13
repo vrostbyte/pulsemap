@@ -17,7 +17,7 @@ export interface HealthSignal {
   id: string;
 
   /** Which data stream produced this signal */
-  type: 'wastewater' | 'flu' | 'airquality' | 'outbreak' | 'hospital' | 'weather' | 'pollen' | 'wildfire';
+  type: 'wastewater' | 'flu' | 'airquality' | 'outbreak' | 'hospital' | 'weather' | 'pollen' | 'wildfire' | 'uv';
 
   /** Human-readable severity bucket */
   severity: 'low' | 'medium' | 'high' | 'critical';

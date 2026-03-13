@@ -107,6 +107,7 @@ function buildMessage(signal: HealthSignal, zScore: number): string {
     weather: 'Weather alert severity',
     pollen:   'Pollen index',
     wildfire: 'Wildfire intensity',
+    uv:       'UV index',
   };
 
   const label = typeLabel[signal.type];

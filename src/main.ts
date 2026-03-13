@@ -26,6 +26,7 @@ import { RiskScoreCard } from '@/components/RiskScore/RiskScore.js';
 import { ThingsToKnow } from '@/components/ThingsToKnow/ThingsToKnow.js';
 import type { SitrepAnomaly, SitrepPositive } from '@/components/ThingsToKnow/ThingsToKnow.js';
 import { fetchAllHealthData, getDataFreshness, computeGlobalScore } from '@/data/aggregator.js';
+import { fetchUVIndex } from '@/data/fetchUVIndex.js';
 import { calculateHealthScore } from '@/scoring/communityRiskScore.js';
 import { logger } from '@/utils/logger.js';
 
@@ -43,6 +44,7 @@ const state: AppState = {
     'weather',
     'pollen',
     'wildfire',
+    'uv',
   ]),
   signals: [],
   healthScore: null,
@@ -258,8 +260,19 @@ document.addEventListener('search:zip', (e: Event) => {
   // Fly the map to the searched location
   mapView.flyTo(lat, lng, 10);
 
-  // Reload data scoped to this ZIP for AQI (other sources are national)
-  void loadData(zip);
+  // Load national + ZIP-scoped data, then fetch UV for the specific location.
+  // UV is fetched after loadData() so it is appended to the fresh signal set
+  // (loadData overwrites state.signals, so order matters here).
+  void (async () => {
+    await loadData(zip);
+
+    const uvSignal = await fetchUVIndex(lat, lng);
+    if (uvSignal) {
+      state.signals = [...state.signals, uvSignal];
+      mapView.updateLayers(state.signals, state.activeLayerTypes);
+      logger.info('UV index added to signals', { lat, lng, value: uvSignal.value });
+    }
+  })();
 
   logger.info('search:zip handled', { zip, fips });
 });

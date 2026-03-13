@@ -53,7 +53,11 @@ export class Sidebar {
     const riskCardSlot = document.createElement('div');
     riskCardSlot.id = 'risk-score-card';
 
-    // ── b. Source Breakdown ────────────────────────────────────────────────
+    // ── b. Sitrep Card slot ────────────────────────────────────────────────
+    const sitrepCardSlot = document.createElement('div');
+    sitrepCardSlot.id = 'sitrep-card';
+
+    // ── c. Source Breakdown ────────────────────────────────────────────────
     const breakdownSection = this.buildSection('Source Breakdown');
     this.componentBarsEl = document.createElement('div');
     this.componentBarsEl.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
@@ -106,6 +110,7 @@ export class Sidebar {
     sourceSection.appendChild(this.sourceListEl);
 
     this.container.appendChild(riskCardSlot);
+    this.container.appendChild(sitrepCardSlot);
     this.container.appendChild(breakdownSection);
     this.container.appendChild(alertSection);
     this.container.appendChild(sourceSection);

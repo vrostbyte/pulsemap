@@ -38,6 +38,7 @@ const LAYERS: LayerDef[] = [
   { id: 'hospitals',  emoji: '🏥', label: 'Hospitals',    color: '#22c55e' },
   { id: 'heatAlerts', emoji: '🌡️', label: 'Heat Alerts',  color: '#ff4500' },
   { id: 'pollen',     emoji: '🌿', label: 'Pollen',       color: '#9acd32' },
+  { id: 'wildfire',   emoji: '🔥', label: 'Wildfires',    color: '#ff4500' },
 ];
 
 // ─── Severity key ─────────────────────────────────────────────────────────────

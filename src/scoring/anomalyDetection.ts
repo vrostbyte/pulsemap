@@ -105,7 +105,8 @@ function buildMessage(signal: HealthSignal, zScore: number): string {
     outbreak: 'Outbreak alert count',
     hospital: 'Hospital capacity pressure',
     weather: 'Weather alert severity',
-    pollen: 'Pollen index',
+    pollen:   'Pollen index',
+    wildfire: 'Wildfire intensity',
   };
 
   const label = typeLabel[signal.type];

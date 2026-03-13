@@ -10,6 +10,7 @@
 import { ScatterplotLayer } from '@deck.gl/layers';
 import type { PickingInfo } from '@deck.gl/core';
 import type { HealthSignal } from '@/types/index.js';
+import { getLayerRadius, getLayerPixelConstraints } from '../../utils/normalizeRadius';
 
 type RGBA = [number, number, number, number];
 
@@ -51,12 +52,11 @@ export function createAirQualityLayer(
     filled: true,
     radiusScale: 1,
     radiusMinPixels: 4,
-    radiusMaxPixels: 60,
+    radiusMaxPixels: 50,
 
     getPosition: (d: HealthSignal) => [d.longitude, d.latitude],
 
-    // Smaller radius than wastewater — these are zip-level points, not counties
-    getRadius: (d: HealthSignal) => 8_000 + (d.value / 100) * 22_000,
+    getRadius: (d: HealthSignal) => getLayerRadius(d.value, 'airQuality', d.rawValue),
 
     getFillColor: (d: HealthSignal) => aqiToColor(d.rawValue),
 

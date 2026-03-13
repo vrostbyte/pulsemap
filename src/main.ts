@@ -13,6 +13,7 @@
  */
 
 import type { AppState, HealthSignal } from '@/types/index.js';
+import { TopBar } from '@/components/TopBar/TopBar.js';
 import { MapView } from '@/components/Map/MapView.js';
 import { Sidebar } from '@/components/Sidebar/Sidebar.js';
 import { ZipSearch } from '@/components/ZipSearch/ZipSearch.js';
@@ -20,7 +21,10 @@ import type { ZipSearchEventDetail } from '@/components/ZipSearch/ZipSearch.js';
 import { LayerControls } from '@/components/LayerControls/LayerControls.js';
 import type { LayerToggleEventDetail } from '@/components/LayerControls/LayerControls.js';
 import { AlertBanner } from '@/components/AlertBanner/AlertBanner.js';
-import { fetchAllHealthData, getDataFreshness } from '@/data/aggregator.js';
+import { RiskScoreCard } from '@/components/RiskScore/RiskScore.js';
+import { ThingsToKnow } from '@/components/ThingsToKnow/ThingsToKnow.js';
+import type { SitrepAnomaly, SitrepPositive } from '@/components/ThingsToKnow/ThingsToKnow.js';
+import { fetchAllHealthData, getDataFreshness, computeGlobalScore } from '@/data/aggregator.js';
 import { calculateHealthScore } from '@/scoring/communityRiskScore.js';
 import { logger } from '@/utils/logger.js';
 
@@ -58,8 +62,11 @@ if (!appEl) throw new Error('Missing #app element in index.html');
 const mapContainer = document.createElement('div');
 appEl.appendChild(mapContainer);
 
+const topBar    = new TopBar(appEl);
 const mapView   = new MapView(mapContainer);
 const sidebar   = new Sidebar(appEl);
+const riskCard  = new RiskScoreCard('risk-score-card');
+const sitrep    = new ThingsToKnow('sitrep-card');
 const zipSearch = new ZipSearch(appEl);
 const layerControls = new LayerControls(appEl, state.activeLayerTypes);
 const alertBanner = new AlertBanner(appEl);
@@ -92,6 +99,45 @@ function refreshScore(): void {
   }
 }
 
+// ─── Sitrep helpers ───────────────────────────────────────────────────────────
+
+const ANOMALY_DIRECTION: Record<string, string> = {
+  low:      'elevated',
+  medium:   'rising',
+  high:     'deteriorating',
+  critical: 'spiking',
+};
+
+const ANOMALY_SEVERITY_NUM: Record<string, number> = {
+  low:      20,
+  medium:   50,
+  high:     75,
+  critical: 95,
+};
+
+const SITREP_SOURCES = [
+  { compKey: 'wastewater'       as const, label: 'Wastewater' },
+  { compKey: 'fluActivity'      as const, label: 'Flu Activity' },
+  { compKey: 'airQuality'       as const, label: 'Air Quality' },
+  { compKey: 'hospitalCapacity' as const, label: 'Hospital Capacity' },
+  { compKey: 'outbreakAlerts'   as const, label: 'Outbreak' },
+];
+
+function anomalySource(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes('wastewater'))                          return 'Wastewater';
+  if (m.includes('flu') || m.includes('influenza'))      return 'Flu Activity';
+  if (m.includes('air') || m.includes('aqi'))            return 'Air Quality';
+  if (m.includes('hospital') || m.includes('capacity'))  return 'Hospital Capacity';
+  if (m.includes('outbreak'))                            return 'Outbreak';
+  return 'Health Signal';
+}
+
+function anomalyLocation(message: string): string {
+  const match = message.match(/\bin\s+([A-Z][^.–—]+?)(?=\s*(?:area|region|county\b)?(?:[.–—]|$))/i);
+  return match?.[1]?.trim() ?? 'monitored areas';
+}
+
 // ─── Data loading ─────────────────────────────────────────────────────────────
 
 /**
@@ -108,6 +154,33 @@ async function loadData(zip?: string): Promise<void> {
 
   mapView.updateLayers(signals, state.activeLayerTypes);
   refreshScore();
+
+  const globalScore = computeGlobalScore([signals]);
+  riskCard.update(globalScore, zip !== undefined);
+  topBar.setStatus(globalScore);
+  topBar.setUpdated();
+
+  const score = state.healthScore;
+  if (score) {
+    const sitrepAnomalies: SitrepAnomaly[] = score.anomalies.map((a) => ({
+      source:    anomalySource(a.message),
+      direction: ANOMALY_DIRECTION[a.severity] ?? 'elevated',
+      location:  anomalyLocation(a.message),
+      context:   `${a.zScore.toFixed(1)}× above historical average`,
+      severity:  ANOMALY_SEVERITY_NUM[a.severity] ?? 20,
+    }));
+
+    const anomalySources = new Set(sitrepAnomalies.map((s) => s.source));
+    const sitrepPositives: SitrepPositive[] = SITREP_SOURCES
+      .filter((s) => !anomalySources.has(s.label) && score.components[s.compKey] < 50)
+      .map((s) => ({
+        source:   s.label,
+        headline: `${s.label} within normal range`,
+        context:  'No elevated signals detected',
+      }));
+
+    sitrep.update(sitrepAnomalies, sitrepPositives);
+  }
 
   const freshness = getDataFreshness();
   sidebar.updateSourceFreshness(freshness);

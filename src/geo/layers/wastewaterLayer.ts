@@ -10,6 +10,7 @@
 import { ScatterplotLayer } from '@deck.gl/layers';
 import type { PickingInfo } from '@deck.gl/core';
 import type { HealthSignal } from '@/types/index.js';
+import { getLayerRadius, getLayerPixelConstraints } from '../../utils/normalizeRadius';
 
 /** RGBA color tuples keyed by severity */
 const COLORS: Record<HealthSignal['severity'], [number, number, number, number]> = {
@@ -44,13 +45,12 @@ export function createWastewaterLayer(
     filled: true,
     radiusScale: 1,
     radiusMinPixels: 6,
-    radiusMaxPixels: 80,
+    radiusMaxPixels: 70,
     lineWidthMinPixels: 1,
 
     getPosition: (d: HealthSignal) => [d.longitude, d.latitude],
 
-    // Base 20 km radius scaled up by normalised value (0–100 → 1–3×)
-    getRadius: (d: HealthSignal) => 20_000 * (1 + (d.value / 100) * 2),
+    getRadius: (d: HealthSignal) => getLayerRadius(d.value, 'wastewater'),
 
     getFillColor: (d: HealthSignal) => COLORS[d.severity],
 

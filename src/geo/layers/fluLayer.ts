@@ -5,6 +5,7 @@
 import { ScatterplotLayer } from '@deck.gl/layers';
 import type { PickingInfo } from '@deck.gl/core';
 import type { HealthSignal } from '@/types/index.js';
+import { getLayerRadius, getLayerPixelConstraints } from '../../utils/normalizeRadius';
 
 const SEVERITY_COLORS: Record<string, [number, number, number, number]> = {
   critical: [255,  50,  50, 220],
@@ -23,7 +24,7 @@ export function createFluLayer(
     id: 'flu-layer',
     data: fluSignals,
     getPosition: (s: HealthSignal) => [s.longitude, s.latitude],
-    getRadius: (s: HealthSignal) => 80000 + s.value * 2000,
+    getRadius: (s: HealthSignal) => getLayerRadius(s.value, 'flu'),
     getFillColor: (s: HealthSignal) =>
       SEVERITY_COLORS[s.severity] ?? [100, 200, 100, 160],
     getLineColor: [255, 255, 255, 60],
@@ -31,7 +32,7 @@ export function createFluLayer(
     stroked: true,
     filled: true,
     radiusUnits: 'meters',
-    radiusMinPixels: 8,
+    radiusMinPixels: 6,
     radiusMaxPixels: 80,
     pickable: true,
     onHover,

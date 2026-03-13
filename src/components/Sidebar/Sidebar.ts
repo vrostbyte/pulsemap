@@ -2,9 +2,10 @@
  * PulseMap — Sidebar component.
  *
  * A 340px right panel showing:
- *   1. Community Health Score — large circular badge + component breakdown bars
- *   2. Anomaly Alerts         — list of detected statistical anomalies
- *   3. Data Sources Status    — freshness indicator per data source
+ *   1. Risk Score Card    — gauge injected by RiskScoreCard component
+ *   2. Source Breakdown   — per-source component bars
+ *   3. Anomaly Alerts     — collapsible list of detected anomalies
+ *   4. Data Sources       — freshness indicator per data source
  *
  * The component is purely display-only; it exposes an update() method that
  * main.ts calls whenever new data arrives.
@@ -36,9 +37,6 @@ const COMPONENT_LABELS: Record<string, string> = {
 
 export class Sidebar {
   private container: HTMLElement;
-  private scoreCircle: HTMLDivElement;
-  private scoreLabel: HTMLDivElement;
-  private scoreSubLabel: HTMLDivElement;
   private componentBarsEl: HTMLDivElement;
   private alertListEl: HTMLDivElement;
   private sourceListEl: HTMLDivElement;
@@ -51,50 +49,58 @@ export class Sidebar {
       'overflow-y:auto;display:flex;flex-direction:column;' +
       'font-family:system-ui,sans-serif;';
 
-    // ── Section 1: Health Score ────────────────────────────────────────────
-    const scoreSection = this.buildSection('Community Health Score');
+    // ── a. Risk Score Card slot ────────────────────────────────────────────
+    const riskCardSlot = document.createElement('div');
+    riskCardSlot.id = 'risk-score-card';
 
-    const scoreWidget = document.createElement('div');
-    scoreWidget.style.cssText =
-      'display:flex;align-items:center;gap:20px;margin-bottom:16px;';
+    // ── b. Sitrep Card slot ────────────────────────────────────────────────
+    const sitrepCardSlot = document.createElement('div');
+    sitrepCardSlot.id = 'sitrep-card';
 
-    this.scoreCircle = document.createElement('div');
-    this.scoreCircle.style.cssText =
-      'width:72px;height:72px;border-radius:50%;display:flex;align-items:center;' +
-      'justify-content:center;flex-shrink:0;font-size:22px;font-weight:700;' +
-      'color:#22c55e;border:3px solid #22c55e;';
-    this.scoreCircle.textContent = '—';
-
-    const scoreMeta = document.createElement('div');
-
-    this.scoreLabel = document.createElement('div');
-    this.scoreLabel.style.cssText = 'font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;';
-    this.scoreLabel.textContent = 'Loading…';
-
-    this.scoreSubLabel = document.createElement('div');
-    this.scoreSubLabel.style.cssText = 'font-size:12px;color:#8892a4;';
-    this.scoreSubLabel.textContent = 'Fetching data sources';
-
-    scoreMeta.appendChild(this.scoreLabel);
-    scoreMeta.appendChild(this.scoreSubLabel);
-    scoreWidget.appendChild(this.scoreCircle);
-    scoreWidget.appendChild(scoreMeta);
-
+    // ── c. Source Breakdown ────────────────────────────────────────────────
+    const breakdownSection = this.buildSection('Source Breakdown');
     this.componentBarsEl = document.createElement('div');
     this.componentBarsEl.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+    breakdownSection.appendChild(this.componentBarsEl);
 
-    scoreSection.appendChild(scoreWidget);
-    scoreSection.appendChild(this.componentBarsEl);
+    // ── c. Anomaly Alerts (collapsible, default collapsed) ─────────────────
+    const alertSection = document.createElement('div');
+    alertSection.style.cssText = 'padding:20px;border-bottom:1px solid #1e2d4a;';
 
-    // ── Section 2: Anomaly Alerts ─────────────────────────────────────────
-    const alertSection = this.buildSection('Anomaly Alerts');
+    const alertHeader = document.createElement('div');
+    alertHeader.style.cssText =
+      'display:flex;align-items:center;justify-content:space-between;cursor:pointer;';
+
+    const alertTitleEl = document.createElement('div');
+    alertTitleEl.style.cssText =
+      'color:#8892a4;font-size:11px;font-weight:600;text-transform:uppercase;' +
+      'letter-spacing:0.1em;';
+    alertTitleEl.textContent = 'ANOMALY ALERTS';
+
+    const alertChevron = document.createElement('span');
+    alertChevron.style.cssText = 'color:#8892a4;font-size:11px;transition:transform 0.2s;';
+    alertChevron.textContent = '▼';
+    alertChevron.style.transform = 'rotate(-90deg)';
+
+    alertHeader.appendChild(alertTitleEl);
+    alertHeader.appendChild(alertChevron);
+    alertSection.appendChild(alertHeader);
+
     this.alertListEl = document.createElement('div');
-    this.alertListEl.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+    this.alertListEl.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-top:16px;';
     this.alertListEl.innerHTML =
       '<div style="color:#8892a4;font-size:13px;">No anomalies detected yet.</div>';
+    this.alertListEl.style.display = 'none'; // collapsed by default
+
+    alertHeader.addEventListener('click', () => {
+      const isExpanded = this.alertListEl.style.display !== 'none';
+      this.alertListEl.style.display = isExpanded ? 'none' : 'flex';
+      alertChevron.style.transform = isExpanded ? 'rotate(-90deg)' : 'rotate(0deg)';
+    });
+
     alertSection.appendChild(this.alertListEl);
 
-    // ── Section 3: Data Sources ────────────────────────────────────────────
+    // ── d. Data Sources ────────────────────────────────────────────────────
     const sourceSection = this.buildSection('Data Sources');
     this.sourceListEl = document.createElement('div');
     this.sourceListEl.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
@@ -103,7 +109,9 @@ export class Sidebar {
     }
     sourceSection.appendChild(this.sourceListEl);
 
-    this.container.appendChild(scoreSection);
+    this.container.appendChild(riskCardSlot);
+    this.container.appendChild(sitrepCardSlot);
+    this.container.appendChild(breakdownSection);
     this.container.appendChild(alertSection);
     this.container.appendChild(sourceSection);
     mountPoint.appendChild(this.container);
@@ -187,16 +195,6 @@ export class Sidebar {
    * Called by main.ts whenever the score is recalculated.
    */
   update(score: CommunityHealthScore): void {
-    const color = scoreColor(score.score);
-
-    // Update score circle
-    this.scoreCircle.textContent = String(score.score);
-    this.scoreCircle.style.color = color;
-    this.scoreCircle.style.borderColor = color;
-
-    this.scoreLabel.textContent = score.label;
-    this.scoreSubLabel.textContent = `Based on ${score.anomalies.length} anomal${score.anomalies.length === 1 ? 'y' : 'ies'} detected`;
-
     // Rebuild component bars
     this.componentBarsEl.innerHTML = '';
     for (const [key, value] of Object.entries(score.components)) {

@@ -13,6 +13,7 @@
 import { ScatterplotLayer } from '@deck.gl/layers';
 import type { PickingInfo } from '@deck.gl/core';
 import type { HealthSignal } from '@/types/index.js';
+import { getLayerRadius, getLayerPixelConstraints } from '../../utils/normalizeRadius';
 
 type RGBA = [number, number, number, number];
 
@@ -48,11 +49,11 @@ export function createOutbreakLayers(
     opacity: 1,
     stroked: false,
     filled: true,
-    radiusMinPixels: 6,
-    radiusMaxPixels: 20,
+    radiusMinPixels: 5,
+    radiusMaxPixels: 30,
 
     getPosition: (d: HealthSignal) => [d.longitude, d.latitude],
-    getRadius: (_d: HealthSignal) => 30_000,
+    getRadius: (d: HealthSignal) => getLayerRadius(d.value, 'outbreak') * 0.4,
     getFillColor: (d: HealthSignal) => SEVERITY_COLORS[d.severity],
 
     ...hoverProp,
@@ -68,11 +69,11 @@ export function createOutbreakLayers(
     stroked: true,
     filled: false,
     lineWidthMinPixels: 2,
-    radiusMinPixels: 12,
-    radiusMaxPixels: 40,
+    radiusMinPixels: 8,
+    radiusMaxPixels: 60,
 
     getPosition: (d: HealthSignal) => [d.longitude, d.latitude],
-    getRadius: (_d: HealthSignal) => 70_000,
+    getRadius: (d: HealthSignal) => getLayerRadius(d.value, 'outbreak'),
     getLineColor: (d: HealthSignal) => SEVERITY_COLORS[d.severity],
 
     updateTriggers: { getLineColor: [signals.length] },

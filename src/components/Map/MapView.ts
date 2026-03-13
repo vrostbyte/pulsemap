@@ -21,6 +21,7 @@ import { createAirQualityLayer } from '@/geo/layers/airQualityLayer.js';
 import { createOutbreakLayers } from '@/geo/layers/outbreakLayer.js';
 import { createFluLayer } from '@/geo/layers/fluLayer.js';
 import { createHospitalLayer } from '@/geo/layers/hospitalLayer.js';
+import { createHeatLayer } from '@/geo/layers/heatLayer.js';
 
 // ─── Minimal offline map style ────────────────────────────────────────────────
 // A self-contained MapLibre style with no external tile sources.
@@ -191,6 +192,10 @@ export class MapView {
 
     if (active.has('hospital') && !this.hiddenLayers.has('hospitals')) {
       layers.push(createHospitalLayer(signals, this.handleHover));
+    }
+
+    if (active.has('weather') && !this.hiddenLayers.has('heatAlerts')) {
+      layers.push(createHeatLayer(signals, this.handleHover));
     }
 
     this.overlay.setProps({ layers });

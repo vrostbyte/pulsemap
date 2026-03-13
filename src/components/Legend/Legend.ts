@@ -36,6 +36,7 @@ const LAYERS: LayerDef[] = [
   { id: 'airQuality', emoji: '💨', label: 'Air Quality',  color: '#06b6d4' },
   { id: 'outbreaks',  emoji: '🌍', label: 'Outbreaks',    color: '#ef4444' },
   { id: 'hospitals',  emoji: '🏥', label: 'Hospitals',    color: '#22c55e' },
+  { id: 'heatAlerts', emoji: '🌡️', label: 'Heat Alerts',  color: '#ff4500' },
 ];
 
 // ─── Severity key ─────────────────────────────────────────────────────────────

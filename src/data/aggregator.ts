@@ -15,6 +15,7 @@ import { fetchFluView } from './fetchFluView.js';
 import { fetchAirQuality } from './fetchAirQuality.js';
 import { fetchOutbreaks } from './fetchOutbreaks.js';
 import { fetchHospitals } from './fetchHospitals.js';
+import { fetchHeatAlerts } from './fetchHeatAlerts.js';
 import { logger } from '@/utils/logger.js';
 
 // ─── Freshness tracking ───────────────────────────────────────────────────────
@@ -61,12 +62,14 @@ export async function fetchAllHealthData(zip?: string): Promise<HealthSignal[]> 
     airQualityResult,
     outbreakResult,
     hospitalResult,
+    heatAlertsResult,
   ] = await Promise.allSettled([
     fetchWastewater(),
     fetchFluView(),
     fetchAirQuality(zip),
     fetchOutbreaks(),
     fetchHospitals(),
+    fetchHeatAlerts(),
   ]);
 
   const now = new Date().toISOString();
@@ -105,6 +108,13 @@ export async function fetchAllHealthData(zip?: string): Promise<HealthSignal[]> 
     freshnessMap.set(SOURCE_NAMES.hospital, now);
   } else {
     logger.error('aggregator: hospital fetch failed', hospitalResult.reason);
+  }
+
+  if (heatAlertsResult.status === 'fulfilled') {
+    allSignals.push(...heatAlertsResult.value);
+    freshnessMap.set(SOURCE_NAMES.weather, now);
+  } else {
+    logger.error('aggregator: heat alerts fetch failed', heatAlertsResult.reason);
   }
 
   logger.info(`aggregator: loaded ${allSignals.length} total signals`);

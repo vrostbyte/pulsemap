@@ -11,7 +11,7 @@
 //   3. getLayerRadius() uses that 0-100 index to compute a meter radius
 //   4. Formula: (baseKm + (riskIndex/100) x rangeKm) x 1000 meters
 
-export type LayerType = 'airQuality' | 'wastewater' | 'outbreak' | 'flu' | 'hospital';
+export type LayerType = 'airQuality' | 'wastewater' | 'outbreak' | 'flu' | 'hospital' | 'weather';
 
 interface LayerRadiusConfig {
   baseKm: number;
@@ -55,6 +55,13 @@ const LAYER_CONFIGS: Record<LayerType, LayerRadiusConfig> = {
     rangeKm:   20,
     minPixels: 4,
     maxPixels: 50,
+    normalize: (value) => Math.max(0, Math.min(100, value)),
+  },
+  weather: {
+    baseKm:    20,
+    rangeKm:   60,
+    minPixels: 6,
+    maxPixels: 80,
     normalize: (value) => Math.max(0, Math.min(100, value)),
   },
 };

@@ -87,8 +87,17 @@ export class ThingsToKnow {
    * @param positives  Positive fill items for calm days
    */
   update(anomalies: SitrepAnomaly[], positives: SitrepPositive[]): void {
-    // Sort by severity descending, take top 3
-    const ranked = [...anomalies]
+    // Deduplicate by source first — keep only the worst signal per source.
+    // This prevents one noisy data source from claiming all 3 slots.
+    const dedupedMap = new Map<string, SitrepAnomaly>();
+    for (const a of anomalies) {
+      const existing = dedupedMap.get(a.source);
+      if (!existing || a.severity > existing.severity) {
+        dedupedMap.set(a.source, a);
+      }
+    }
+    // Then sort the deduped winners by severity and take top 3
+    const ranked = [...dedupedMap.values()]
       .sort((a, b) => b.severity - a.severity)
       .slice(0, 3);
 

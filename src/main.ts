@@ -18,8 +18,9 @@ import { MapView } from '@/components/Map/MapView.js';
 import { Sidebar } from '@/components/Sidebar/Sidebar.js';
 import { ZipSearch } from '@/components/ZipSearch/ZipSearch.js';
 import type { ZipSearchEventDetail } from '@/components/ZipSearch/ZipSearch.js';
-import { LayerControls } from '@/components/LayerControls/LayerControls.js';
-import type { LayerToggleEventDetail } from '@/components/LayerControls/LayerControls.js';
+// import { LayerControls } from '@/components/LayerControls/LayerControls.js'; // replaced by Legend component (Sprint 1)
+// import type { LayerToggleEventDetail } from '@/components/LayerControls/LayerControls.js'; // replaced by Legend component (Sprint 1)
+import { Legend } from '@/components/Legend/Legend.js';
 import { AlertBanner } from '@/components/AlertBanner/AlertBanner.js';
 import { RiskScoreCard } from '@/components/RiskScore/RiskScore.js';
 import { ThingsToKnow } from '@/components/ThingsToKnow/ThingsToKnow.js';
@@ -68,12 +69,13 @@ const sidebar   = new Sidebar(appEl);
 const riskCard  = new RiskScoreCard('risk-score-card');
 const sitrep    = new ThingsToKnow('sitrep-card');
 const zipSearch = new ZipSearch(appEl);
-const layerControls = new LayerControls(appEl, state.activeLayerTypes);
+// const layerControls = new LayerControls(appEl, state.activeLayerTypes); // replaced by Legend component (Sprint 1)
+const legend = new Legend(appEl);
 const alertBanner = new AlertBanner(appEl);
 
-// Suppress unused-variable warning — zipSearch is instantiated for its side
-// effects (DOM mounting + event dispatch).
+// Suppress unused-variable warning — these are instantiated for side effects only.
 void zipSearch;
+void legend;
 
 logger.info('PulseMap: components mounted');
 
@@ -184,7 +186,7 @@ async function loadData(zip?: string): Promise<void> {
 
   const freshness = getDataFreshness();
   sidebar.updateSourceFreshness(freshness);
-  layerControls.updateFreshness(freshness);
+  // layerControls.updateFreshness(freshness); // replaced by Legend component (Sprint 1)
 
   logger.info(`loadData: rendered ${signals.length} signals`);
 }
@@ -231,7 +233,7 @@ document.addEventListener('search:zip', (e: Event) => {
 
 // Handle layer toggle
 document.addEventListener('layer:toggle', (e: Event) => {
-  const event = e as CustomEvent<LayerToggleEventDetail>;
+  const event = e as CustomEvent<{ type: HealthSignal['type']; active: boolean }>;
   const { type, active } = event.detail;
 
   if (active) {

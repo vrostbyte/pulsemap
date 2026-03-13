@@ -78,6 +78,9 @@ export class MapView {
   private overlay: MapboxOverlay;
   private tooltipEl: HTMLDivElement;
   private container: HTMLElement;
+  private hiddenLayers: Set<string> = new Set();
+  private lastSignals: HealthSignal[] = [];
+  private lastActiveTypes: Set<HealthSignal['type']> = new Set(['wastewater', 'flu', 'airquality', 'outbreak', 'hospital', 'weather']);
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -120,6 +123,17 @@ export class MapView {
     this.map.on('load', () => {
       document.dispatchEvent(new CustomEvent('map:ready'));
     });
+
+    // Listen for Legend toggle events — show/hide individual deck.gl layers
+    window.addEventListener('legend:toggle', (e: Event) => {
+      const { layer, visible } = (e as CustomEvent<{ layer: string; visible: boolean }>).detail;
+      if (visible) {
+        this.hiddenLayers.delete(layer);
+      } else {
+        this.hiddenLayers.add(layer);
+      }
+      this.rerenderLayers();
+    });
   }
 
   // ─── Hover handler ──────────────────────────────────────────────────────────
@@ -149,25 +163,33 @@ export class MapView {
     signals: HealthSignal[],
     activeTypes?: Set<HealthSignal['type']>,
   ): void {
-    const active = activeTypes ?? new Set<HealthSignal['type']>(['wastewater', 'flu', 'airquality', 'outbreak', 'hospital', 'weather']);
+    this.lastSignals = signals;
+    this.lastActiveTypes = activeTypes ?? new Set<HealthSignal['type']>(['wastewater', 'flu', 'airquality', 'outbreak', 'hospital', 'weather']);
+    this.rerenderLayers();
+  }
 
+  private rerenderLayers(): void {
+    const active = this.lastActiveTypes;
+    const signals = this.lastSignals;
     const layers: Layer[] = [];
 
-    if (active.has('wastewater')) {
+    if (active.has('wastewater') && !this.hiddenLayers.has('wastewater')) {
       layers.push(createWastewaterLayer(signals, this.handleHover));
     }
 
-    if (active.has('flu')) {
+    if (active.has('flu') && !this.hiddenLayers.has('flu')) {
       layers.push(createFluLayer(signals, this.handleHover));
     }
-    if (active.has('airquality')) {
+
+    if (active.has('airquality') && !this.hiddenLayers.has('airQuality')) {
       layers.push(createAirQualityLayer(signals, this.handleHover));
     }
 
-    if (active.has('outbreak')) {
+    if (active.has('outbreak') && !this.hiddenLayers.has('outbreaks')) {
       layers.push(...createOutbreakLayers(signals, this.handleHover));
     }
-    if (active.has('hospital')) {
+
+    if (active.has('hospital') && !this.hiddenLayers.has('hospitals')) {
       layers.push(createHospitalLayer(signals, this.handleHover));
     }
 

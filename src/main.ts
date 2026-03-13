@@ -18,8 +18,9 @@ import { MapView } from '@/components/Map/MapView.js';
 import { Sidebar } from '@/components/Sidebar/Sidebar.js';
 import { ZipSearch } from '@/components/ZipSearch/ZipSearch.js';
 import type { ZipSearchEventDetail } from '@/components/ZipSearch/ZipSearch.js';
-import { LayerControls } from '@/components/LayerControls/LayerControls.js';
-import type { LayerToggleEventDetail } from '@/components/LayerControls/LayerControls.js';
+// import { LayerControls } from '@/components/LayerControls/LayerControls.js'; // replaced by Legend component (Sprint 1)
+// import type { LayerToggleEventDetail } from '@/components/LayerControls/LayerControls.js'; // replaced by Legend component (Sprint 1)
+import { Legend } from '@/components/Legend/Legend.js';
 import { AlertBanner } from '@/components/AlertBanner/AlertBanner.js';
 import { RiskScoreCard } from '@/components/RiskScore/RiskScore.js';
 import { ThingsToKnow } from '@/components/ThingsToKnow/ThingsToKnow.js';
@@ -68,12 +69,13 @@ const sidebar   = new Sidebar(appEl);
 const riskCard  = new RiskScoreCard('risk-score-card');
 const sitrep    = new ThingsToKnow('sitrep-card');
 const zipSearch = new ZipSearch(appEl);
-const layerControls = new LayerControls(appEl, state.activeLayerTypes);
+// const layerControls = new LayerControls(appEl, state.activeLayerTypes); // replaced by Legend component (Sprint 1)
+const legend = new Legend(appEl);
 const alertBanner = new AlertBanner(appEl);
 
-// Suppress unused-variable warning — zipSearch is instantiated for its side
-// effects (DOM mounting + event dispatch).
+// Suppress unused-variable warning — these are instantiated for side effects only.
 void zipSearch;
+void legend;
 
 logger.info('PulseMap: components mounted');
 
@@ -133,9 +135,40 @@ function anomalySource(message: string): string {
   return 'Health Signal';
 }
 
+// US state abbreviation → full name lookup
+// Used to convert raw state codes (e.g. "AL") into readable location names.
+const STATE_NAMES: Record<string, string> = {
+  AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',
+  CO:'Colorado',CT:'Connecticut',DE:'Delaware',FL:'Florida',GA:'Georgia',
+  HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',
+  KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',
+  MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',
+  MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',
+  NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',
+  OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',
+  SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',
+  VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming',
+  DC:'Washington D.C.',
+};
+
 function anomalyLocation(message: string): string {
-  const match = message.match(/\bin\s+([A-Z][^.–—]+?)(?=\s*(?:area|region|county\b)?(?:[.–—]|$))/i);
-  return match?.[1]?.trim() ?? 'monitored areas';
+  // Try to match a clean place name after "in " — stop before numbers or raw data
+  const placeMatch = message.match(/\bin\s+([A-Za-z][A-Za-z\s]{2,30})(?=\s*(area|region|county|metro)?\s*([.–—,]|$))/i);
+  if (placeMatch?.[1]) {
+    const raw = placeMatch[1].trim();
+    // If it looks like a state abbreviation (1-2 uppercase letters), expand it
+    const upper = raw.toUpperCase();
+    if (STATE_NAMES[upper]) return STATE_NAMES[upper];
+    // If it contains digits it is raw data — reject it
+    if (/\d/.test(raw)) return 'monitored areas';
+    return raw;
+  }
+  // Try to find a bare state abbreviation anywhere in the message
+  const stateMatch = message.match(/\b([A-Z]{2})\b/);
+  if (stateMatch?.[1] && STATE_NAMES[stateMatch[1]]) {
+    return STATE_NAMES[stateMatch[1]];
+  }
+  return 'monitored areas';
 }
 
 // ─── Data loading ─────────────────────────────────────────────────────────────
@@ -184,7 +217,7 @@ async function loadData(zip?: string): Promise<void> {
 
   const freshness = getDataFreshness();
   sidebar.updateSourceFreshness(freshness);
-  layerControls.updateFreshness(freshness);
+  // layerControls.updateFreshness(freshness); // replaced by Legend component (Sprint 1)
 
   logger.info(`loadData: rendered ${signals.length} signals`);
 }
@@ -231,7 +264,7 @@ document.addEventListener('search:zip', (e: Event) => {
 
 // Handle layer toggle
 document.addEventListener('layer:toggle', (e: Event) => {
-  const event = e as CustomEvent<LayerToggleEventDetail>;
+  const event = e as CustomEvent<{ type: HealthSignal['type']; active: boolean }>;
   const { type, active } = event.detail;
 
   if (active) {

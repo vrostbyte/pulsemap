@@ -1,0 +1,80 @@
+/* src/components/RiskScore/RiskScore.css */
+
+.risk-card {
+  background: #070d18;
+  border: 1px solid #1e2d42;
+  border-radius: 12px;
+  padding: 16px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  user-select: none;
+}
+
+.risk-card__eyebrow {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #3a5068;
+  text-transform: uppercase;
+}
+
+.risk-card__gauge-wrap {
+  padding: 4px 0 0;
+}
+
+.risk-gauge {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.gauge-track {
+  opacity: 0.35;
+}
+
+.gauge-fill {
+  transition: stroke 0.4s ease;
+}
+
+.gauge-label {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 9px;
+  fill: #3a5068;
+  letter-spacing: 0.05em;
+}
+
+.gauge-score {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 44px;
+  font-weight: 700;
+  fill: #e2ecff;
+}
+
+.gauge-risk-label {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  fill: #00e676;
+  transition: fill 0.4s ease;
+}
+
+.risk-card__scope {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.risk-card__scope-icon {
+  font-size: 11px;
+}
+
+.risk-card__scope-text {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 9px;
+  color: #3a5068;
+  letter-spacing: 0.08em;
+}

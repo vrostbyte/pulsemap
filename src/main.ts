@@ -166,7 +166,7 @@ function anomalyLocation(message: string): string {
   // Try to find a bare state abbreviation anywhere in the message
   const stateMatch = message.match(/\b([A-Z]{2})\b/);
   if (stateMatch?.[1] && STATE_NAMES[stateMatch[1]]) {
-    return STATE_NAMES[stateMatch[1]];
+    return STATE_NAMES[stateMatch[1]] ?? 'monitored areas';
   }
   return 'monitored areas';
 }

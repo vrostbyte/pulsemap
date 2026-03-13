@@ -31,7 +31,7 @@ export class ZipSearch {
   constructor(mountPoint: HTMLElement) {
     this.container = document.createElement('div');
     this.container.style.cssText =
-      'position:fixed;top:16px;left:16px;z-index:100;display:flex;flex-direction:column;gap:6px;width:220px;';
+      'position:fixed;top:60px;left:12px;z-index:100;display:flex;flex-direction:column;gap:6px;width:220px;';
 
     const inputRow = document.createElement('div');
     inputRow.style.cssText = 'display:flex;gap:6px;';

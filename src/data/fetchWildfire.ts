@@ -125,7 +125,7 @@ export async function fetchWildfire(): Promise<HealthSignal[]> {
     if (!Array.isArray(rows)) throw new Error('Unexpected response shape');
 
     const signals = rows.map(rowToSignal);
-    if (signals.length === 0) throw new Error('No wildfire detections');
+    // zero detections is valid — no active fires
 
     logger.info(`fetchWildfire: loaded ${signals.length} fire detections`);
     return signals;

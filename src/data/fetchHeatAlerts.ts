@@ -181,7 +181,7 @@ export async function fetchHeatAlerts(): Promise<HealthSignal[]> {
       });
     }
 
-    if (signals.length === 0) throw new Error('No heat alerts in response');
+    // zero alerts is valid — no active heat warnings
     logger.info(`fetchHeatAlerts: loaded ${signals.length} heat alerts`);
     return signals;
   } catch (err) {

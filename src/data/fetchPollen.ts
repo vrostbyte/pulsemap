@@ -172,26 +172,34 @@ function extractSignal(
  * Fetches pollen data for a 35-point US grid from Open-Meteo.
  * Falls back to mock data on total failure.
  */
+async function fetchBatch(batch: [number, number][]): Promise<{ lat: number; lng: number; json: OpenMeteoResponse }[]> {
+  const results = await Promise.allSettled(
+    batch.map(async ([lat, lng]) => {
+      const res = await fetch(buildUrl(lat, lng), { signal: AbortSignal.timeout(10_000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return { lat, lng, json: (await res.json()) as OpenMeteoResponse };
+    }),
+  );
+  return results.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
+}
+
 export async function fetchPollen(): Promise<HealthSignal[]> {
   try {
-    const results = await Promise.allSettled(
-      GRID.map(async ([lat, lng]) => {
-        const res = await fetch(buildUrl(lat, lng), {
-          signal: AbortSignal.timeout(10_000),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return { lat, lng, json: (await res.json()) as OpenMeteoResponse };
-      }),
-    );
-
+    const BATCH_SIZE = 5;
+    const DELAY_MS = 300;
     const signals: HealthSignal[] = [];
-    for (const result of results) {
-      if (result.status !== 'fulfilled') continue;
-      const signal = extractSignal(result.value.lat, result.value.lng, result.value.json);
-      if (signal) signals.push(signal);
+    for (let i = 0; i < GRID.length; i += BATCH_SIZE) {
+      const batch = GRID.slice(i, i + BATCH_SIZE) as [number, number][];
+      const rows = await fetchBatch(batch);
+      for (const { lat, lng, json } of rows) {
+        const signal = extractSignal(lat, lng, json);
+        if (signal) signals.push(signal);
+      }
+      if (i + BATCH_SIZE < GRID.length) {
+        await new Promise((res) => setTimeout(res, DELAY_MS));
+      }
     }
-
-    if (signals.length === 0) throw new Error('No pollen data returned');
+    // zero pollen is valid off-season — return empty not mock
     logger.info(`fetchPollen: loaded ${signals.length} grid points`);
     return signals;
   } catch (err) {

@@ -22,6 +22,7 @@ import { createOutbreakLayers } from '@/geo/layers/outbreakLayer.js';
 import { createFluLayer } from '@/geo/layers/fluLayer.js';
 import { createHospitalLayer } from '@/geo/layers/hospitalLayer.js';
 import { createHeatLayer } from '@/geo/layers/heatLayer.js';
+import { createPollenLayer } from '@/geo/layers/pollenLayer.js';
 
 // ─── Minimal offline map style ────────────────────────────────────────────────
 // A self-contained MapLibre style with no external tile sources.
@@ -81,7 +82,7 @@ export class MapView {
   private container: HTMLElement;
   private hiddenLayers: Set<string> = new Set();
   private lastSignals: HealthSignal[] = [];
-  private lastActiveTypes: Set<HealthSignal['type']> = new Set(['wastewater', 'flu', 'airquality', 'outbreak', 'hospital', 'weather']);
+  private lastActiveTypes: Set<HealthSignal['type']> = new Set(['wastewater', 'flu', 'airquality', 'outbreak', 'hospital', 'weather', 'pollen']);
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -196,6 +197,10 @@ export class MapView {
 
     if (active.has('weather') && !this.hiddenLayers.has('heatAlerts')) {
       layers.push(createHeatLayer(signals, this.handleHover));
+    }
+
+    if (active.has('pollen') && !this.hiddenLayers.has('pollen')) {
+      layers.push(createPollenLayer(signals, this.handleHover));
     }
 
     this.overlay.setProps({ layers });

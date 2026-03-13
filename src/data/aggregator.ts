@@ -16,6 +16,7 @@ import { fetchAirQuality } from './fetchAirQuality.js';
 import { fetchOutbreaks } from './fetchOutbreaks.js';
 import { fetchHospitals } from './fetchHospitals.js';
 import { fetchHeatAlerts } from './fetchHeatAlerts.js';
+import { fetchPollen } from './fetchPollen.js';
 import { logger } from '@/utils/logger.js';
 
 // ─── Freshness tracking ───────────────────────────────────────────────────────
@@ -63,6 +64,7 @@ export async function fetchAllHealthData(zip?: string): Promise<HealthSignal[]> 
     outbreakResult,
     hospitalResult,
     heatAlertsResult,
+    pollenResult,
   ] = await Promise.allSettled([
     fetchWastewater(),
     fetchFluView(),
@@ -70,6 +72,7 @@ export async function fetchAllHealthData(zip?: string): Promise<HealthSignal[]> 
     fetchOutbreaks(),
     fetchHospitals(),
     fetchHeatAlerts(),
+    fetchPollen(),
   ]);
 
   const now = new Date().toISOString();
@@ -115,6 +118,13 @@ export async function fetchAllHealthData(zip?: string): Promise<HealthSignal[]> 
     freshnessMap.set(SOURCE_NAMES.weather, now);
   } else {
     logger.error('aggregator: heat alerts fetch failed', heatAlertsResult.reason);
+  }
+
+  if (pollenResult.status === 'fulfilled') {
+    allSignals.push(...pollenResult.value);
+    freshnessMap.set('Open-Meteo Pollen', now);
+  } else {
+    logger.error('aggregator: pollen fetch failed', pollenResult.reason);
   }
 
   logger.info(`aggregator: loaded ${allSignals.length} total signals`);

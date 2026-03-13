@@ -41,6 +41,7 @@ const state: AppState = {
     'outbreak',
     'hospital',
     'weather',
+    'pollen',
   ]),
   signals: [],
   healthScore: null,

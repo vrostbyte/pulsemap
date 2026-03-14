@@ -69,7 +69,7 @@ function parseCsv(csv: string): FireRow[] {
 
     // Skip low-confidence or nighttime detections
     if (confidence === 'l') continue;
-    if (daynight !== 'D')   continue;
+
 
     const lat        = parseFloat(cols[idx.latitude]   ?? '');
     const lng        = parseFloat(cols[idx.longitude]  ?? '');

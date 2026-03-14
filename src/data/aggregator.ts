@@ -18,6 +18,7 @@ import { fetchHospitals } from './fetchHospitals.js';
 import { fetchHeatAlerts } from './fetchHeatAlerts.js';
 import { fetchPollen } from './fetchPollen.js';
 import { fetchWildfire } from './fetchWildfire.js';
+import { fetchUVIndex } from './fetchUVIndex.js';
 import { logger } from '@/utils/logger.js';
 
 // ─── Freshness tracking ───────────────────────────────────────────────────────
@@ -135,6 +136,22 @@ export async function fetchAllHealthData(zip?: string): Promise<HealthSignal[]> 
     freshnessMap.set('NASA FIRMS', now);
   } else {
     logger.error('aggregator: wildfire fetch failed', wildfireResult.reason);
+  }
+
+  // UV national sample — 9-point grid, best-effort
+  const UV_GRID: [number, number][] = [
+    [47.6, -122.3], [45.5, -122.7], [37.8, -122.4],
+    [34.0, -118.2], [33.4, -112.1], [39.7, -104.9],
+    [41.8,  -87.6], [29.7,  -95.4], [25.8,  -80.2],
+  ];
+  const uvResults = await Promise.allSettled(
+    UV_GRID.map(([lat, lng]) => fetchUVIndex(lat, lng))
+  );
+  for (const r of uvResults) {
+    if (r.status === 'fulfilled' && r.value) {
+      allSignals.push(r.value);
+      freshnessMap.set('UV Index', new Date().toISOString());
+    }
   }
 
   logger.info(`aggregator: loaded ${allSignals.length} total signals`);

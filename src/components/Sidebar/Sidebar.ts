@@ -164,13 +164,14 @@ export class Sidebar {
   private buildComponentBar(
     key: string,
     rawValue: number,
+    dimmed = false,
   ): HTMLDivElement {
     const value = Math.round(rawValue);
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:8px;';
 
     const label = document.createElement('span');
-    label.style.cssText = 'color:#8892a4;font-size:12px;width:120px;flex-shrink:0;';
+    label.style.cssText = `color:${dimmed ? '#2a3a52' : '#8892a4'};font-size:12px;width:120px;flex-shrink:0;`;
     label.textContent = COMPONENT_LABELS[key] ?? key;
 
     const track = document.createElement('div');
@@ -218,7 +219,7 @@ export class Sidebar {
     this.componentBarsEl.appendChild(comingSoonLabel);
     for (const [key, value] of Object.entries(score.components)) {
       if (COMING_SOON.has(key)) {
-        this.componentBarsEl.appendChild(this.buildComponentBar(key, value));
+        this.componentBarsEl.appendChild(this.buildComponentBar(key, value, true));
       }
     }
 

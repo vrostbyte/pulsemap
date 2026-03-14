@@ -37,7 +37,6 @@ const LAYERS: LayerDef[] = [
   { id: 'outbreaks',  emoji: '🌍', label: 'Outbreaks',    color: '#ef4444' },
   { id: 'hospitals',  emoji: '🏥', label: 'Hospitals',    color: '#22c55e' },
   { id: 'heatAlerts', emoji: '🌡️', label: 'Heat Alerts',  color: '#ff4500' },
-  { id: 'pollen',     emoji: '🌿', label: 'Pollen',       color: '#9acd32' },
   { id: 'wildfire',   emoji: '🔥', label: 'Wildfires',    color: '#ff4500' },
   { id: 'uv',         emoji: '☀️', label: 'UV Index',     color: '#ffd700' },
 ];
@@ -86,6 +85,15 @@ export class Legend {
         <div class="legend__active-dot"></div>
       </div>
     `).join('');
+    const comingSoonHTML = `
+      <div style="border-top:1px solid #1a2540;margin:6px 4px;"></div>
+      <div style="color:#1e2d4a;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:2px 4px 4px;">Under Construction</div>
+      <div class="legend__row legend__row--off" style="pointer-events:none;">
+        <div class="legend__dot" style="background:#9acd32"></div>
+        <span class="legend__emoji">🌿</span>
+        <span class="legend__label">Pollen</span>
+      </div>
+    `;
 
     const severityHTML = SEVERITY.map(s => `
       <div class="legend__sev-item">
@@ -96,6 +104,7 @@ export class Legend {
 
     return `
       ${rowsHTML}
+      ${comingSoonHTML}
       <div class="legend__divider"></div>
       <div class="legend__severity">${severityHTML}</div>
     `;

@@ -22,11 +22,15 @@ import { scoreLabel } from '@/utils/formatters.js';
 // ─── Weights ──────────────────────────────────────────────────────────────────
 
 const WEIGHTS = {
-  wastewater:        0.30,
-  fluActivity:       0.25,
-  airQuality:        0.20,
-  hospitalCapacity:  0.15,
-  outbreakAlerts:    0.10,
+  wastewater:        0.25,
+  fluActivity:       0.20,
+  airQuality:        0.18,
+  hospitalCapacity:  0.13,
+  outbreakAlerts:    0.09,
+  wildfireRisk:      0.07,
+  heatAlerts:        0.04,
+  pollenIndex:       0.03,
+  uvIndex:           0.01,
 } as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -64,6 +68,10 @@ export function calculateHealthScore(
     airQuality:       meanValue(scoped, 'airquality'),
     hospitalCapacity: meanValue(scoped, 'hospital'),
     outbreakAlerts:   meanValue(scoped, 'outbreak'),
+    wildfireRisk:     meanValue(scoped, 'wildfire'),
+    heatAlerts:       meanValue(scoped, 'weather'),
+    pollenIndex:      meanValue(scoped, 'pollen'),
+    uvIndex:          meanValue(scoped, 'uv'),
   };
 
   const score = Math.round(
@@ -71,7 +79,11 @@ export function calculateHealthScore(
     components.fluActivity      * WEIGHTS.fluActivity +
     components.airQuality       * WEIGHTS.airQuality +
     components.hospitalCapacity * WEIGHTS.hospitalCapacity +
-    components.outbreakAlerts   * WEIGHTS.outbreakAlerts,
+    components.outbreakAlerts   * WEIGHTS.outbreakAlerts +
+    components.wildfireRisk     * WEIGHTS.wildfireRisk +
+    components.heatAlerts       * WEIGHTS.heatAlerts +
+    components.pollenIndex      * WEIGHTS.pollenIndex +
+    components.uvIndex          * WEIGHTS.uvIndex,
   );
 
   const anomalies = detectAnomalies(scoped);

@@ -31,6 +31,10 @@ const COMPONENT_LABELS: Record<string, string> = {
   airQuality:       'Air Quality',
   hospitalCapacity: 'Hospitals',
   outbreakAlerts:   'Outbreaks',
+  wildfireRisk:     'Wildfires',
+  heatAlerts:       'Heat Alerts',
+  pollenIndex:      'Pollen',
+  uvIndex:          'UV Index',
 };
 
 // ─── Component class ──────────────────────────────────────────────────────────

@@ -30,11 +30,17 @@ function uviToSeverity(uvi: number): HealthSignal['severity'] {
 
 // ─── API shape ────────────────────────────────────────────────────────────────
 
+interface UVIForecastEntry {
+  uvi: number;
+  time?: string;
+}
+
 interface UVIResponse {
   ok: boolean;
   now: {
     uvi: number;
   };
+  forecast?: UVIForecastEntry[];
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -59,7 +65,19 @@ export async function fetchUVIndex(
     const data = (await response.json()) as UVIResponse;
     if (!data.ok || !data.now) throw new Error('Invalid response shape');
 
-    const uvi   = data.now.uvi;
+    // Use peak UV from forecast (next 12 hours) so nighttime calls still
+    // return a useful "today's peak UV" value instead of 0.
+    let uvi = data.now.uvi;
+    if (Array.isArray(data.forecast)) {
+      const now = Date.now();
+      const twelveHours = 12 * 60 * 60 * 1000;
+      for (const entry of data.forecast) {
+        const entryTime = entry.time ? new Date(entry.time).getTime() : 0;
+        if (!entry.time || (entryTime >= now && entryTime <= now + twelveHours)) {
+          if (entry.uvi > uvi) uvi = entry.uvi;
+        }
+      }
+    }
     const value = Math.min(100, Math.round((uvi / 11) * 100));
 
     return {

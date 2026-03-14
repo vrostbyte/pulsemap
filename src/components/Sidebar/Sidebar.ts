@@ -163,8 +163,9 @@ export class Sidebar {
 
   private buildComponentBar(
     key: string,
-    value: number,
+    rawValue: number,
   ): HTMLDivElement {
+    const value = Math.round(rawValue);
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:8px;';
 

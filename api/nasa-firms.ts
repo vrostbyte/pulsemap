@@ -44,6 +44,13 @@ function parseCsv(csv: string): FireRow[] {
 
   // Parse header to find column indices dynamically
   const header = (lines[0] ?? '').split(',').map((h) => h.trim());
+
+  // Debug: log raw header and first 3 data lines
+  console.log('[FIRMS] raw header:', lines[0]);
+  for (let d = 1; d <= 3 && d < lines.length; d++) {
+    console.log(`[FIRMS] raw data line ${d}:`, lines[d]);
+  }
+
   const idx = {
     latitude:   header.indexOf('latitude'),
     longitude:  header.indexOf('longitude'),
@@ -52,7 +59,14 @@ function parseCsv(csv: string): FireRow[] {
   };
 
   // Require all columns to be present
-  if ([idx.latitude, idx.longitude, idx.bright_ti4, idx.frp].some((i) => i === -1)) return [];
+  const missingCols = Object.entries(idx)
+    .filter(([, v]) => v === -1)
+    .map(([k]) => k);
+  if (missingCols.length > 0) {
+    console.log('[FIRMS] guard failed: missing columns:', missingCols.join(', '));
+    return [];
+  }
+  console.log('[FIRMS] guard passed');
 
   const rows: FireRow[] = [];
 
@@ -109,7 +123,10 @@ export default async function handler(request: Request): Promise<Response> {
     }
 
     const csv  = await upstream.text();
+    console.log('[FIRMS] raw response (first 500 chars):', csv.slice(0, 500));
+    console.log('[FIRMS] total response length:', csv.length);
     const rows = parseCsv(csv);
+    console.log('[FIRMS] parsed row count:', rows.length);
 
     return new Response(JSON.stringify(rows), {
       status: 200,

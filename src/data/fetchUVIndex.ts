@@ -32,9 +32,8 @@ function uviToSeverity(uvi: number): HealthSignal['severity'] {
 
 interface UVIResponse {
   ok: boolean;
-  uvi?: {
+  now: {
     uvi: number;
-    [key: string]: unknown;
   };
 }
 
@@ -58,9 +57,9 @@ export async function fetchUVIndex(
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = (await response.json()) as UVIResponse;
-    if (!data.ok || data.uvi == null) throw new Error('Invalid response shape');
+    if (!data.ok || !data.now) throw new Error('Invalid response shape');
 
-    const uvi   = data.uvi.uvi;
+    const uvi   = data.now.uvi;
     const value = Math.min(100, Math.round((uvi / 11) * 100));
 
     return {

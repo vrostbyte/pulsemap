@@ -179,12 +179,12 @@ export class Sidebar {
     const fill = document.createElement('div');
     fill.style.cssText =
       `height:100%;border-radius:2px;width:${value}%;` +
-      `background:${scoreColor(value)};transition:width 0.5s ease;`;
+      `background:${value === 0 ? '#1e2d4a' : scoreColor(value)};transition:width 0.5s ease;`;
     track.appendChild(fill);
 
     const valueEl = document.createElement('span');
-    valueEl.style.cssText = 'color:#8892a4;font-size:11px;width:28px;text-align:right;';
-    valueEl.textContent = String(value);
+    valueEl.style.cssText = `color:${value === 0 ? '#2a3a52' : '#8892a4'};font-size:11px;width:28px;text-align:right;`;
+    valueEl.textContent = value === 0 ? '—' : String(value);
 
     row.appendChild(label);
     row.appendChild(track);

@@ -194,9 +194,12 @@ export async function fetchHeatAlerts(): Promise<HealthSignal[]> {
       const event = props.event ?? '';
 
       if (!event.includes('Heat') && !event.includes('Excessive Heat')) continue;
-      if (!feature.geometry) continue;
-
-      const centroid = computeCentroid(feature.geometry);
+      let centroid: [number, number] | null = null;
+      if (feature.geometry) {
+        centroid = computeCentroid(feature.geometry);
+      } else {
+        centroid = officeCoords(props.headline ?? '');
+      }
       if (!centroid) continue;
 
       const [longitude, latitude] = centroid;

@@ -58,6 +58,9 @@ function parseCsv(csv: string): FireRow[] {
   if (Object.values(idx).some((i) => i === -1)) return [];
 
   const rows: FireRow[] = [];
+  let skippedLowConf = 0;
+  let skippedOther   = 0;
+  const firstConf: string[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
@@ -67,19 +70,28 @@ function parseCsv(csv: string): FireRow[] {
     const confidence = (cols[idx.confidence] ?? '').trim().toLowerCase();
     const daynight   = (cols[idx.daynight]   ?? '').trim().toUpperCase();
 
-    // Skip low-confidence or nighttime detections
-    if (confidence === 'l') continue;
+    if (firstConf.length < 3) firstConf.push(confidence);
 
+    // Skip low-confidence or nighttime detections
+    if (confidence === 'l') { skippedLowConf++; continue; }
 
     const lat        = parseFloat(cols[idx.latitude]   ?? '');
     const lng        = parseFloat(cols[idx.longitude]  ?? '');
     const brightness = parseFloat(cols[idx.bright_ti4] ?? '');
     const frp        = parseFloat(cols[idx.frp]        ?? '');
 
-    if (isNaN(lat) || isNaN(lng) || isNaN(brightness) || isNaN(frp)) continue;
+    if (isNaN(lat) || isNaN(lng) || isNaN(brightness) || isNaN(frp)) { skippedOther++; continue; }
 
     rows.push({ lat, lng, brightness, confidence, frp });
   }
+
+  console.log('FIRMS parseCsv diagnostics:', {
+    totalDataLines: lines.length - 1,
+    passed:         rows.length,
+    skippedLowConf,
+    skippedOther,
+    firstConfValues: firstConf,
+  });
 
   return rows;
 }
@@ -116,6 +128,12 @@ export default async function handler(request: Request): Promise<Response> {
     }
 
     const csv  = await upstream.text();
+
+    // Log the raw header + first 5 data lines so we can verify the actual CSV shape
+    const rawLines = csv.trim().split('\n');
+    console.log('FIRMS raw CSV header:', rawLines[0]);
+    console.log('FIRMS raw CSV first 5 data lines:', rawLines.slice(1, 6));
+
     const rows = parseCsv(csv);
 
     return new Response(JSON.stringify(rows), {

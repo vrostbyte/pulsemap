@@ -12,7 +12,7 @@ const CDC_NWSS_URL =
   '&$select=county_fips,county_names,wwtp_jurisdiction,ptc_15d,percentile,date_start,date_end' +
   '&$order=date_start%20DESC';
 
-const CACHE_KEY = 'pulsemap:wastewater:v1';
+const CACHE_KEY = 'pulsemap:wastewater:v2';
 const CACHE_TTL = 3600;
 
 const CORS_HEADERS = {

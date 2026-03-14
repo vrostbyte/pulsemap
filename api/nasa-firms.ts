@@ -7,8 +7,8 @@
 export const config = { runtime: 'edge' };
 
 const BBOX = '-125,24,-66,50'; // continental US: west,south,east,north
-const DAYS  = '1';
-const PRODUCTS = ['VIIRS_NOAA20_NRT', 'VIIRS_NOAA21_NRT'] as const;
+const DAYS  = '2';
+const PRODUCTS = ['VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT', 'VIIRS_NOAA21_NRT'] as const;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

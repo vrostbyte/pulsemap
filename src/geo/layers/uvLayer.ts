@@ -37,7 +37,7 @@ export function createUVLayer(
     opacity: 0.75,
     radiusUnits: 'meters',
     radiusMinPixels: 8,
-    radiusMaxPixels: 120,
+    radiusMaxPixels: 60,
     pickable: true,
     onHover,
     updateTriggers: { getRadius: signals.length, getFillColor: signals.length },

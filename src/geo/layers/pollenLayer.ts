@@ -36,7 +36,7 @@ export function createPollenLayer(
     opacity: 0.75,
     radiusUnits: 'meters',
     radiusMinPixels: 6,
-    radiusMaxPixels: 80,
+    radiusMaxPixels: 50,
     pickable: true,
     onHover,
     updateTriggers: { getRadius: signals.length, getFillColor: signals.length },

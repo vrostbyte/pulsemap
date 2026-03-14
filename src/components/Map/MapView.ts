@@ -177,28 +177,10 @@ export class MapView {
     const signals = this.lastSignals;
     const layers: Layer[] = [];
 
-    if (active.has('wastewater') && !this.hiddenLayers.has('wastewater')) {
-      layers.push(createWastewaterLayer(signals, this.handleHover));
-    }
-
-    if (active.has('flu') && !this.hiddenLayers.has('flu')) {
-      layers.push(createFluLayer(signals, this.handleHover));
-    }
-
-    if (active.has('airquality') && !this.hiddenLayers.has('airQuality')) {
-      layers.push(createAirQualityLayer(signals, this.handleHover));
-    }
-
-    if (active.has('outbreak') && !this.hiddenLayers.has('outbreaks')) {
-      layers.push(...createOutbreakLayers(signals, this.handleHover));
-    }
-
-    if (active.has('hospital') && !this.hiddenLayers.has('hospitals')) {
-      layers.push(createHospitalLayer(signals, this.handleHover));
-    }
-
-    if (active.has('weather') && !this.hiddenLayers.has('heatAlerts')) {
-      layers.push(createHeatLayer(signals, this.handleHover));
+    // Layer order: bottom → top.  Largest-radius background layers first,
+    // primary signal (wastewater) last so it renders on top.
+    if (active.has('uv') && !this.hiddenLayers.has('uv')) {
+      layers.push(createUVLayer(signals, this.handleHover));
     }
 
     if (active.has('pollen') && !this.hiddenLayers.has('pollen')) {
@@ -209,8 +191,28 @@ export class MapView {
       layers.push(createWildfireLayer(signals, this.handleHover));
     }
 
-    if (active.has('uv') && !this.hiddenLayers.has('uv')) {
-      layers.push(createUVLayer(signals, this.handleHover));
+    if (active.has('hospital') && !this.hiddenLayers.has('hospitals')) {
+      layers.push(createHospitalLayer(signals, this.handleHover));
+    }
+
+    if (active.has('airquality') && !this.hiddenLayers.has('airQuality')) {
+      layers.push(createAirQualityLayer(signals, this.handleHover));
+    }
+
+    if (active.has('outbreak') && !this.hiddenLayers.has('outbreaks')) {
+      layers.push(...createOutbreakLayers(signals, this.handleHover));
+    }
+
+    if (active.has('flu') && !this.hiddenLayers.has('flu')) {
+      layers.push(createFluLayer(signals, this.handleHover));
+    }
+
+    if (active.has('weather') && !this.hiddenLayers.has('heatAlerts')) {
+      layers.push(createHeatLayer(signals, this.handleHover));
+    }
+
+    if (active.has('wastewater') && !this.hiddenLayers.has('wastewater')) {
+      layers.push(createWastewaterLayer(signals, this.handleHover));
     }
 
     this.overlay.setProps({ layers });

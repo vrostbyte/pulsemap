@@ -17,13 +17,16 @@ const NWS_URL =
   'https://api.weather.gov/alerts/active' +
   '?status=actual' +
   '&message_type=alert' +
-  '&urgency=Immediate,Expected' +
+  '&urgency=Immediate,Expected,Future' +
   '&severity=Extreme,Severe';
 
 /** Alert event types with health implications — all others are filtered out. */
 const HEALTH_ALERT_TYPES = new Set([
   'Excessive Heat Warning',
+  'Extreme Heat Warning',
+  'Extreme Heat Watch',
   'Excessive Heat Watch',
+  'Heat Watch',
   'Heat Advisory',
   'Air Quality Alert',
   'Air Quality Watch',

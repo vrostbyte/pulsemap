@@ -18,9 +18,9 @@ const CORS_HEADERS = {
 // ─── Mock fallback (no API key in environment) ────────────────────────────────
 
 const MOCK_FIRES = [
-  { lat: 38.5, lng: -120.5, brightness: 420, confidence: 'h', frp: 45.2 },
-  { lat: 39.2, lng: -121.1, brightness: 385, confidence: 'n', frp: 22.7 },
-  { lat: 37.8, lng: -119.8, brightness: 465, confidence: 'h', frp: 78.4 },
+  { lat: 38.5, lng: -120.5, brightness: 420, frp: 45.2 },
+  { lat: 39.2, lng: -121.1, brightness: 385, frp: 22.7 },
+  { lat: 37.8, lng: -119.8, brightness: 465, frp: 78.4 },
 ];
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
@@ -29,7 +29,6 @@ interface FireRow {
   lat:        number;
   lng:        number;
   brightness: number;
-  confidence: string;
   frp:        number;
 }
 
@@ -49,13 +48,11 @@ function parseCsv(csv: string): FireRow[] {
     latitude:   header.indexOf('latitude'),
     longitude:  header.indexOf('longitude'),
     bright_ti4: header.indexOf('bright_ti4'),
-    confidence: header.indexOf('confidence'),
     frp:        header.indexOf('frp'),
-    daynight:   header.indexOf('daynight'),
   };
 
   // Require all columns to be present
-  if (Object.values(idx).some((i) => i === -1)) return [];
+  if ([idx.latitude, idx.longitude, idx.bright_ti4, idx.frp].some((i) => i === -1)) return [];
 
   const rows: FireRow[] = [];
 
@@ -64,11 +61,7 @@ function parseCsv(csv: string): FireRow[] {
     if (!line || line.trim() === '') continue;
     const cols = line.split(',');
 
-    const confidence = (cols[idx.confidence] ?? '').trim().toLowerCase();
-    const daynight   = (cols[idx.daynight]   ?? '').trim().toUpperCase();
 
-    // Skip low-confidence or nighttime detections
-    if (confidence === 'l') continue;
 
 
     const lat        = parseFloat(cols[idx.latitude]   ?? '');
@@ -78,7 +71,7 @@ function parseCsv(csv: string): FireRow[] {
 
     if (isNaN(lat) || isNaN(lng) || isNaN(brightness) || isNaN(frp)) continue;
 
-    rows.push({ lat, lng, brightness, confidence, frp });
+    rows.push({ lat, lng, brightness, frp });
   }
 
   return rows;

@@ -71,7 +71,6 @@ interface FirmsRow {
   lat:        number;
   lng:        number;
   brightness: number;
-  confidence: string;
   frp:        number;
 }
 
@@ -100,7 +99,6 @@ function rowToSignal(row: FirmsRow): HealthSignal {
     source:    'NASA FIRMS',
     updatedAt: new Date().toISOString(),
     metadata: {
-      confidence: row.confidence,
       frp:        row.frp,
     },
   };

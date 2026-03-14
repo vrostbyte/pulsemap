@@ -84,7 +84,7 @@ function valueToSeverity(value: number): HealthSignal['severity'] {
 }
 
 function rowToSignal(row: FirmsRow): HealthSignal {
-  const value    = Math.min(100, Math.round(((row.brightness - 300) / 200) * 100));
+  const value    = Math.min(100, Math.round(((row.brightness - 290) / 110) * 100));
   const severity = valueToSeverity(value);
 
   return {

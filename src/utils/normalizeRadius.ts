@@ -68,7 +68,7 @@ const LAYER_CONFIGS: Record<LayerType, LayerRadiusConfig> = {
     baseKm:    15,
     rangeKm:   45,
     minPixels: 6,
-    maxPixels: 80,
+    maxPixels: 50,
     normalize: (value) => Math.max(0, Math.min(100, value)),
   },
   wildfire: {
@@ -79,10 +79,10 @@ const LAYER_CONFIGS: Record<LayerType, LayerRadiusConfig> = {
     normalize: (value) => Math.max(0, Math.min(100, value)),
   },
   uv: {
-    baseKm:    30,
-    rangeKm:   70,
+    baseKm:    10,
+    rangeKm:   25,
     minPixels: 8,
-    maxPixels: 120,
+    maxPixels: 60,
     normalize: (value) => Math.max(0, Math.min(100, value)),
   },
 };

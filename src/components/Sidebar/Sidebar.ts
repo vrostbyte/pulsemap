@@ -201,9 +201,25 @@ export class Sidebar {
    */
   update(score: CommunityHealthScore): void {
     // Rebuild component bars
+    const COMING_SOON = new Set(['pollenIndex']);
     this.componentBarsEl.innerHTML = '';
     for (const [key, value] of Object.entries(score.components)) {
-      this.componentBarsEl.appendChild(this.buildComponentBar(key, value));
+      if (!COMING_SOON.has(key)) {
+        this.componentBarsEl.appendChild(this.buildComponentBar(key, value));
+      }
+    }
+    // Divider + coming soon section
+    const divider = document.createElement('div');
+    divider.style.cssText = 'border-top:1px solid #1e2d4a;margin:10px 0 6px;';
+    this.componentBarsEl.appendChild(divider);
+    const comingSoonLabel = document.createElement('div');
+    comingSoonLabel.style.cssText = 'color:#2a3a52;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;';
+    comingSoonLabel.textContent = 'Under Construction';
+    this.componentBarsEl.appendChild(comingSoonLabel);
+    for (const [key, value] of Object.entries(score.components)) {
+      if (COMING_SOON.has(key)) {
+        this.componentBarsEl.appendChild(this.buildComponentBar(key, value));
+      }
     }
 
     // Rebuild anomaly list

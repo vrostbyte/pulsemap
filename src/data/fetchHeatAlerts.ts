@@ -130,6 +130,46 @@ function severityToValue(severity: HealthSignal['severity']): number {
   }
 }
 
+// ─── NWS Office fallback coordinates ─────────────────────────────────────────
+const NWS_OFFICE_COORDS: Record<string, [number, number]> = {
+  'Phoenix AZ':         [33.45, -112.07],
+  'Tucson AZ':          [32.22, -110.97],
+  'Los Angeles':        [34.20, -119.18],
+  'Oxnard':             [34.20, -119.18],
+  'San Diego':          [32.72, -117.16],
+  'Las Vegas':          [36.17, -115.14],
+  'Salt Lake City':     [40.77, -111.89],
+  'Denver':             [39.74, -104.98],
+  'Albuquerque':        [35.08, -106.65],
+  'El Paso':            [31.76, -106.49],
+  'San Antonio':        [29.53, -98.47],
+  'Houston':            [29.76,  -95.37],
+  'Dallas':             [32.90,  -97.30],
+  'Miami':              [25.76,  -80.44],
+  'Tampa Bay':          [27.96,  -82.45],
+  'Atlanta':            [33.75,  -84.39],
+  'Memphis':            [35.15,  -90.05],
+  'New Orleans':        [29.95,  -90.07],
+  'Jackson MS':         [32.30,  -90.18],
+  'Birmingham':         [33.52,  -86.81],
+  'Sacramento':         [38.59, -121.49],
+  'San Francisco':      [37.77, -122.42],
+  'Portland':           [45.52, -122.68],
+  'Seattle':            [47.61, -122.34],
+  'Boise':              [43.61, -116.20],
+  'Reno':               [39.53, -119.81],
+};
+
+function officeCoords(headline: string): [number, number] | null {
+  const m = headline.match(/by NWS ([^\n]+?)\s*$/i);
+  if (!m) return null;
+  const office = (m[1] ?? '').trim();
+  for (const [key, coords] of Object.entries(NWS_OFFICE_COORDS)) {
+    if (office.includes(key)) return coords;
+  }
+  return null;
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
